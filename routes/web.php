@@ -63,3 +63,17 @@ Route::post('/submissions/store', function (Request $request) {
 
     return redirect()->back()->with('success', 'Thank you! Your paper has been submitted for verification.');
 });
+
+Route::get('/run-migrations', function () {
+    try {
+        echo "Starting migrations and seeding on remote VPS...<br>";
+        \Illuminate\Support\Facades\Artisan::call('migrate:fresh', [
+            '--seed' => true,
+            '--force' => true, // Bypass production confirmation prompt
+        ]);
+        echo "<b>Success! Database tables created and sample records seeded.</b><br>";
+        echo "<pre>" . \Illuminate\Support\Facades\Artisan::output() . "</pre>";
+    } catch (\Exception $e) {
+        echo "<b>Migration Failed:</b> " . $e->getMessage();
+    }
+});
