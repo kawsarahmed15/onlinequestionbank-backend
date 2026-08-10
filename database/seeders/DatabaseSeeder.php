@@ -7,7 +7,6 @@ use App\Models\State;
 use App\Models\Level;
 use App\Models\Board;
 use App\Models\Stream;
-use App\Models\Semester;
 use App\Models\Subject;
 use App\Models\Paper;
 use App\Models\SystemSetting;
@@ -17,11 +16,11 @@ use Illuminate\Support\Str;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database.
+     * Seed the application's database with a comprehensive production dataset.
      */
     public function run(): void
     {
-        // 1. System Settings
+        // 1. System Settings Config
         SystemSetting::set('require_otp_verification', 'false');
         SystemSetting::set('allow_google_login', 'true');
         SystemSetting::set('free_tier_year_limit', '3');
@@ -29,174 +28,314 @@ class DatabaseSeeder extends Seeder
         SystemSetting::set('tier2_price', '149.00');
         SystemSetting::set('referral_discount_percent', '20');
 
-        // 2. States
-        $assam = State::create([
-            'id' => '11111111-1111-1111-1111-111111111111',
-            'name' => 'Assam',
-            'slug' => 'assam',
-        ]);
+        // 2. States Setup
+        $states = [
+            'Assam' => 'assam',
+            'Meghalaya' => 'meghalaya',
+            'Delhi' => 'delhi',
+            'Nagaland' => 'nagaland',
+        ];
+        $stateModels = [];
+        foreach ($states as $name => $slug) {
+            $stateModels[$slug] = State::firstOrCreate(['slug' => $slug], ['name' => $name]);
+        }
 
-        $meghalaya = State::create([
-            'id' => '11111111-2222-2222-2222-222222222222',
-            'name' => 'Meghalaya',
-            'slug' => 'meghalaya',
-        ]);
+        // 3. Levels (Classes) Setup
+        $levelsData = [
+            'Class X' => 1,
+            'Class XII' => 2,
+            'Degree (UG)' => 3,
+        ];
+        $levelModels = [];
+        foreach ($levelsData as $name => $order) {
+            $slug = Str::slug($name);
+            $levelModels[$slug] = Level::firstOrCreate(
+                ['name' => $name],
+                ['sort_order' => $order]
+            );
+        }
 
-        // 3. Levels
-        $classX = Level::create([
-            'id' => '22222222-2222-2222-2222-222222222222',
-            'name' => 'Class X',
-            'sort_order' => 1,
-        ]);
+        // 4. Boards Setup
+        $boardsData = [
+            [
+                'name' => 'CBSE',
+                'full_name' => 'Central Board of Secondary Education',
+                'is_national' => true,
+                'state_slug' => 'delhi',
+            ],
+            [
+                'name' => 'AHSEC',
+                'full_name' => 'Assam Higher Secondary Education Council',
+                'is_national' => false,
+                'state_slug' => 'assam',
+            ],
+            [
+                'name' => 'MBOSE',
+                'full_name' => 'Meghalaya Board of School Education',
+                'is_national' => false,
+                'state_slug' => 'meghalaya',
+            ],
+            [
+                'name' => 'NBSE',
+                'full_name' => 'Nagaland Board of School Education',
+                'is_national' => false,
+                'state_slug' => 'nagaland',
+            ],
+        ];
+        $boardModels = [];
+        foreach ($boardsData as $board) {
+            $stateId = isset($stateModels[$board['state_slug']]) ? $stateModels[$board['state_slug']]->id : null;
+            $boardModels[$board['name']] = Board::firstOrCreate(
+                ['name' => $board['name']],
+                [
+                    'full_name' => $board['full_name'],
+                    'is_national' => $board['is_national'],
+                    'state_id' => $stateId,
+                ]
+            );
+        }
 
-        $classXII = Level::create([
-            'id' => '33333333-3333-3333-3333-333333333333',
-            'name' => 'Class XII',
-            'sort_order' => 2,
-        ]);
+        // 5. Streams Setup (Applies to Class XII and Degree)
+        $streamsData = ['Science', 'Commerce', 'Arts'];
+        $streamModels = [];
+        
+        // XII Streams
+        foreach ($streamsData as $streamName) {
+            $streamModels['XII_' . $streamName] = Stream::firstOrCreate(
+                [
+                    'level_id' => $levelModels['class-xii']->id,
+                    'name' => $streamName
+                ]
+            );
+        }
+        
+        // Degree Streams (Majors)
+        foreach ($streamsData as $streamName) {
+            $streamModels['Degree_' . $streamName] = Stream::firstOrCreate(
+                [
+                    'level_id' => $levelModels['degree-ug']->id,
+                    'name' => $streamName
+                ]
+            );
+        }
 
-        $degree = Level::create([
-            'id' => '44444444-4444-4444-4444-444444444444',
-            'name' => 'Degree',
-            'sort_order' => 3,
-        ]);
+        // 6. Comprehensive Subjects List by Levels & Streams
+        // Setup map: Level_Slug => [ Board_Name => [ Stream_Key / null => [ Subjects Name => Code ] ] ]
+        $subjectsMapping = [
+            'class-x' => [
+                'CBSE' => [
+                    null => [
+                        'Mathematics Standard' => '041',
+                        'Science' => '086',
+                        'Social Science' => '087',
+                        'English Language & Literature' => '184',
+                        'Hindi Course A' => '002',
+                        'Computer Applications' => '165',
+                    ]
+                ],
+                'AHSEC' => [ // HSLC level mapping under board parentage
+                    null => [
+                        'General Mathematics' => 'M10',
+                        'General Science' => 'S12',
+                        'Social Science' => 'SS15',
+                        'English' => 'E02',
+                        'Assamese MIL' => 'MIL01',
+                        'Advanced Mathematics' => 'AM21',
+                    ]
+                ],
+                'MBOSE' => [
+                    null => [
+                        'Mathematics' => 'M101',
+                        'Science & Technology' => 'S201',
+                        'Social Technology' => 'SS301',
+                        'English Core' => 'E101',
+                        'Health & Physical Education' => 'HP501',
+                    ]
+                ],
+            ],
+            'class-xii' => [
+                'CBSE' => [
+                    'XII_Science' => [
+                        'Physics' => '042',
+                        'Chemistry' => '043',
+                        'Mathematics' => '041',
+                        'Biology' => '044',
+                        'English Core' => '301',
+                        'Computer Science' => '083',
+                    ],
+                    'XII_Commerce' => [
+                        'Accountancy' => '055',
+                        'Business Studies' => '054',
+                        'Economics' => '030',
+                        'Mathematics' => '041',
+                        'English Core' => '301',
+                    ],
+                    'XII_Arts' => [
+                        'History' => '027',
+                        'Geography' => '029',
+                        'Political Science' => '028',
+                        'Sociology' => '039',
+                        'Economics' => '030',
+                        'English Core' => '301',
+                    ],
+                ],
+                'AHSEC' => [
+                    'XII_Science' => [
+                        'Physics' => 'PHYS',
+                        'Chemistry' => 'CHEM',
+                        'Mathematics' => 'MATH',
+                        'Biology' => 'BIOL',
+                        'English Core' => 'ENGL',
+                        'Alternative English' => 'ALTE',
+                    ],
+                    'XII_Commerce' => [
+                        'Accountancy' => 'ACCT',
+                        'Business Studies' => 'BSTD',
+                        'Economics' => 'ECON',
+                        'Commercial Mathematics' => 'CMST',
+                        'English Core' => 'ENGL',
+                    ],
+                    'XII_Arts' => [
+                        'History' => 'HIST',
+                        'Geography' => 'GEOG',
+                        'Political Science' => 'POLS',
+                        'Education' => 'EDUC',
+                        'Economics' => 'ECON',
+                        'English Core' => 'ENGL',
+                    ],
+                ],
+                'MBOSE' => [
+                    'XII_Science' => [
+                        'Physics' => 'PHY12',
+                        'Chemistry' => 'CHE12',
+                        'Mathematics' => 'MAT12',
+                        'Biology' => 'BIO12',
+                        'English Core' => 'ENG12',
+                    ],
+                    'XII_Commerce' => [
+                        'Accountancy' => 'ACC12',
+                        'Business Studies' => 'BST12',
+                        'Economics' => 'ECO12',
+                        'English Core' => 'ENG12',
+                    ],
+                    'XII_Arts' => [
+                        'History' => 'HIS12',
+                        'Geography' => 'GEO12',
+                        'Political Science' => 'PSC12',
+                        'English Core' => 'ENG12',
+                    ],
+                ],
+            ],
+            'degree-ug' => [
+                'CBSE' => [ // Maps standard central university syllabus mockup under national board context
+                    'Degree_Science' => [
+                        'Physics Major Sem 1' => 'PHYM1',
+                        'Chemistry Major Sem 1' => 'CHEM1',
+                        'Mathematics Major Sem 1' => 'MATH1',
+                    ],
+                    'Degree_Commerce' => [
+                        'Financial Accounting Sem 1' => 'FAC1',
+                        'Business Law Sem 1' => 'BLW1',
+                    ],
+                    'Degree_Arts' => [
+                        'English Literature Sem 1' => 'ELIT1',
+                        'Political Science Sem 1' => 'POLI1',
+                    ]
+                ]
+            ]
+        ];
 
-        // 4. Boards
-        $cbse = Board::create([
-            'id' => '55555555-5555-5555-5555-555555555555',
-            'name' => 'CBSE',
-            'full_name' => 'Central Board of Secondary Education',
-            'is_national' => true,
-        ]);
+        // 7. Seed Subjects & Previous Year Papers (Looping years 2015 to 2025)
+        $years = range(2015, 2025);
+        $samplePdfUrl = 'https://pdfobject.com/pdf/sample.pdf';
 
-        $ahsec = Board::create([
-            'id' => '66666666-6666-6666-6666-666666666666',
-            'name' => 'AHSEC',
-            'full_name' => 'Assam Higher Secondary Education Council',
-            'state_id' => $assam->id,
-            'is_national' => false,
-        ]);
+        foreach ($subjectsMapping as $levelSlug => $boards) {
+            $levelModel = $levelModels[$levelSlug];
 
-        $mbose = Board::create([
-            'id' => '66666666-2222-2222-2222-222222222222',
-            'name' => 'MBOSE',
-            'full_name' => 'Meghalaya Board of School Education',
-            'state_id' => $meghalaya->id,
-            'is_national' => false,
-        ]);
+            foreach ($boards as $boardName => $streams) {
+                $boardModel = $boardModels[$boardName];
 
-        // 5. Streams (Class XII)
-        $science = Stream::create([
-            'id' => '77777777-7777-7777-7777-777777777777',
-            'level_id' => $classXII->id,
-            'name' => 'Science',
-        ]);
+                foreach ($streams as $streamKey => $subjects) {
+                    $streamModel = $streamKey ? $streamModels[$streamKey] : null;
 
-        $commerce = Stream::create([
-            'id' => '88888888-8888-8888-8888-888888888888',
-            'level_id' => $classXII->id,
-            'name' => 'Commerce',
-        ]);
+                    foreach ($subjects as $subjectName => $subjectCode) {
+                        // Create Subject
+                        $subjectModel = Subject::firstOrCreate(
+                            [
+                                'board_id' => $boardModel->id,
+                                'name' => $subjectName,
+                                'stream_id' => $streamModel?->id,
+                            ],
+                            [
+                                'code' => $subjectCode,
+                            ]
+                        );
 
-        $arts = Stream::create([
-            'id' => '99999999-9999-9999-9999-999999999999',
-            'level_id' => $classXII->id,
-            'name' => 'Arts',
-        ]);
+                        // Seed papers for this subject across years (2015-2025)
+                        foreach ($years as $year) {
+                            // Seed papers for random availability (e.g. 70% chance of availability)
+                            // This matches realistic database configurations where some years are missing
+                            if (rand(1, 100) <= 75) {
+                                Paper::firstOrCreate(
+                                    [
+                                        'subject_id' => $subjectModel->id,
+                                        'year' => $year,
+                                        'paper_set' => 'A',
+                                    ],
+                                    [
+                                        'exam_type' => 'annual',
+                                        'file_path' => $samplePdfUrl,
+                                        'file_size_bytes' => rand(120000, 350000),
+                                        'download_count' => rand(5, 500),
+                                        'is_active' => true,
+                                    ]
+                                );
+                                
+                                // 20% chance of having a supplementary/additional set paper as well
+                                if (rand(1, 100) <= 20) {
+                                    Paper::firstOrCreate(
+                                        [
+                                            'subject_id' => $subjectModel->id,
+                                            'year' => $year,
+                                            'paper_set' => 'B',
+                                        ],
+                                        [
+                                            'exam_type' => 'supplementary',
+                                            'file_path' => $samplePdfUrl,
+                                            'file_size_bytes' => rand(120000, 300000),
+                                            'download_count' => rand(1, 100),
+                                            'is_active' => true,
+                                        ]
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-        // 6. Subjects (AHSEC Science Class XII)
-        $physics = Subject::create([
-            'id' => 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-            'board_id' => $ahsec->id,
-            'stream_id' => $science->id,
-            'name' => 'Physics',
-            'code' => '042',
-        ]);
+        // 8. Default System Users
+        User::firstOrCreate(
+            ['email' => 'admin@prashnpatra.com'],
+            [
+                'name' => 'System Admin',
+                'password' => bcrypt('admin123'),
+                'role' => 'admin',
+            ]
+        );
 
-        $chemistry = Subject::create([
-            'id' => 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-            'board_id' => $ahsec->id,
-            'stream_id' => $science->id,
-            'name' => 'Chemistry',
-            'code' => '043',
-        ]);
-
-        $maths = Subject::create([
-            'id' => 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-            'board_id' => $ahsec->id,
-            'stream_id' => $science->id,
-            'name' => 'Mathematics',
-            'code' => '041',
-        ]);
-
-        $english = Subject::create([
-            'id' => 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-            'board_id' => $ahsec->id,
-            'stream_id' => $science->id,
-            'name' => 'English Core',
-            'code' => '301',
-        ]);
-
-        // Subjects (AHSEC Commerce Class XII)
-        $accountancy = Subject::create([
-            'id' => 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-            'board_id' => $ahsec->id,
-            'stream_id' => $commerce->id,
-            'name' => 'Accountancy',
-            'code' => '055',
-        ]);
-
-        $businessStudies = Subject::create([
-            'id' => 'ffffffff-ffff-ffff-ffff-ffffffffffff',
-            'board_id' => $ahsec->id,
-            'stream_id' => $commerce->id,
-            'name' => 'Business Studies',
-            'code' => '054',
-        ]);
-
-        // 7. Seed Sample Papers for Physics
-        $fileUrl = 'https://pdfobject.com/pdf/sample.pdf';
-
-        Paper::create([
-            'id' => 'paper-phy-2024-a',
-            'subject_id' => $physics->id,
-            'year' => 2024,
-            'paper_set' => 'A',
-            'exam_type' => 'annual',
-            'file_path' => $fileUrl,
-            'file_size_bytes' => 150000,
-            'download_count' => 124,
-        ]);
-
-        Paper::create([
-            'id' => 'paper-phy-2023-a',
-            'subject_id' => $physics->id,
-            'year' => 2023,
-            'paper_set' => 'A',
-            'exam_type' => 'annual',
-            'file_path' => $fileUrl,
-            'file_size_bytes' => 145000,
-            'download_count' => 310,
-        ]);
-
-        Paper::create([
-            'id' => 'paper-phy-2022-a',
-            'subject_id' => $physics->id,
-            'year' => 2022,
-            'paper_set' => 'A',
-            'exam_type' => 'annual',
-            'file_path' => $fileUrl,
-            'file_size_bytes' => 140000,
-            'download_count' => 420,
-        ]);
-
-        // Default Admin User
-        User::create([
-            'id' => '00000000-0000-0000-0000-000000000000',
-            'name' => 'System Admin',
-            'email' => 'admin@prashnpatra.com',
-            'password' => bcrypt('admin123'),
-            'role' => 'admin',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'teststudent@gmail.com'],
+            [
+                'name' => 'Kawsar Ahmed',
+                'mobile_number' => '+8801700000000',
+                'password' => bcrypt('password123'),
+                'role' => 'student',
+                'onboarded_level_id' => $levelModels['class-xii']->id,
+                'onboarded_stream_id' => $streamModels['XII_Science']->id,
+                'onboarded_board_id' => $boardModels['AHSEC']->id,
+            ]
+        );
     }
 }
