@@ -19,6 +19,13 @@ Route::middleware([VerifyDeviceFingerprint::class])->group(function () {
     // Public/Guest Session Initialization
     Route::post('/auth/guest-init', [AuthController::class, 'guestInit']);
 
+    // Taxonomy metadata (accessible before auth)
+    Route::get('/levels', [SubjectController::class, 'getLevels']);
+    Route::get('/streams', [SubjectController::class, 'getStreams']);
+    Route::get('/boards', [SubjectController::class, 'getBoards']);
+    Route::get('/subjects', [SubjectController::class, 'getSubjects']);
+    Route::get('/subjects/{id}/years', [SubjectController::class, 'getYears']);
+
     // Authenticated API Routes
     Route::middleware(['auth:sanctum'])->group(function () {
         
@@ -30,13 +37,6 @@ Route::middleware([VerifyDeviceFingerprint::class])->group(function () {
 
         // Home Dashboard
         Route::get('/home', [HomeController::class, 'getDashboard']);
-
-        // Taxonomy metadata
-        Route::get('/levels', [SubjectController::class, 'getLevels']);
-        Route::get('/streams', [SubjectController::class, 'getStreams']);
-        Route::get('/boards', [SubjectController::class, 'getBoards']);
-        Route::get('/subjects', [SubjectController::class, 'getSubjects']);
-        Route::get('/subjects/{id}/years', [SubjectController::class, 'getYears']);
 
         // Papers Access & Check
         Route::get('/papers', [PaperController::class, 'getPapers']);
