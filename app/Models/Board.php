@@ -12,6 +12,10 @@ class Board extends Model
 
     protected $fillable = ['name', 'full_name', 'state_id', 'is_national'];
 
+    protected $casts = [
+        'is_national' => 'boolean',
+    ];
+
     public function state()
     {
         return $this->belongsTo(State::class);

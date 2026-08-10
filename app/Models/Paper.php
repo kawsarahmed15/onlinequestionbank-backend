@@ -22,6 +22,10 @@ class Paper extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
     public function subject()
     {
         return $this->belongsTo(Subject::class);
