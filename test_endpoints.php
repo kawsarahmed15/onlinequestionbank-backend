@@ -1,6 +1,6 @@
 <?php
 
-$baseUrl = 'https://onlinequestionbank.kawsar.tech/api/v1';
+$baseUrl = 'https://onlinequestionbank.kawsar.tech/api';
 $appKey = 'base64:IspHhaNw3pGWVYLsCCvmFNoz/jKsqb048aghSLcsRdo=';
 $userAgent = 'PrashnpatraApp/1.0.0 (Flutter)';
 $deviceUuid = 'test-device-uuid-1234567890';
