@@ -23,6 +23,7 @@ Route::middleware([VerifyDeviceFingerprint::class])->group(function () {
     // Taxonomy metadata (accessible before auth)
     Route::get('/levels', [SubjectController::class, 'getLevels']);
     Route::get('/streams', [SubjectController::class, 'getStreams']);
+    Route::get('/semesters', [SubjectController::class, 'getSemesters']);
     Route::get('/boards', [SubjectController::class, 'getBoards']);
     Route::get('/subjects', [SubjectController::class, 'getSubjects']);
     Route::get('/subjects/{id}/years', [SubjectController::class, 'getYears']);

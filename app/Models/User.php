@@ -27,6 +27,7 @@ class User extends Authenticatable
         'onboarded_level_id',
         'onboarded_stream_id',
         'onboarded_board_id',
+        'onboarded_semester_id',
         'role',
     ];
 
@@ -102,5 +103,10 @@ class User extends Authenticatable
     public function board()
     {
         return $this->belongsTo(Board::class, 'onboarded_board_id');
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class, 'onboarded_semester_id');
     }
 }

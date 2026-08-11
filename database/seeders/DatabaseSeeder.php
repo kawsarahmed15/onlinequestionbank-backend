@@ -182,6 +182,19 @@ class DatabaseSeeder extends Seeder
             ['level_id' => $levelModels['degree-ug']->id, 'name' => 'BBA']
         );
 
+        // 5.5 Semesters Setup (Degree level only)
+        $semesterModels = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $semUuid = "55555555-5555-5555-5555-00000000000" . $i;
+            $semesterModels[$i] = \App\Models\Semester::firstOrCreate(
+                ['id' => $semUuid],
+                [
+                    'level_id' => $levelModels['degree-ug']->id,
+                    'number' => $i
+                ]
+            );
+        }
+
         // 6. Comprehensive Subjects List by Levels & Streams
         $subjectsMapping = [
             'class-x' => [
@@ -290,46 +303,55 @@ class DatabaseSeeder extends Seeder
             ],
             'degree-ug' => [
                 'Gauhati University' => [
-                    'Degree_BA' => [
-                        'BA English Literature Major' => 'BAENG01',
-                        'BA History Major' => 'BAHIS02',
-                        'BA Political Science Major' => 'BAPOL03',
+                    'Degree_BA_Sem1' => [
+                        'BA English Literature Major Sem 1' => 'BAENG01',
+                        'BA History Major Sem 1' => 'BAHIS01',
                     ],
-                    'Degree_BSc' => [
-                        'BSc Physics Major' => 'BSCPHY01',
-                        'BSc Chemistry Major' => 'BSCCHE02',
-                        'BSc Mathematics Major' => 'BSCMAT03',
+                    'Degree_BA_Sem2' => [
+                        'BA English Literature Major Sem 2' => 'BAENG02',
+                        'BA Political Science Sem 2' => 'BAPOL02',
                     ],
-                    'Degree_BCom' => [
-                        'BCom Financial Accounting' => 'BCOMACC01',
-                        'BCom Business Law' => 'BCOMLAW02',
+                    'Degree_BSc_Sem1' => [
+                        'BSc Physics Major Sem 1' => 'BSCPHY01',
+                        'BSc Chemistry Major Sem 1' => 'BSCCHE01',
                     ],
-                    'Degree_BCA' => [
-                        'BCA Programming in C' => 'BCAPROG01',
-                        'BCA Database Management' => 'BCADBM02',
+                    'Degree_BSc_Sem2' => [
+                        'BSc Physics Major Sem 2' => 'BSCPHY02',
+                        'BSc Mathematics Sem 2' => 'BSCMAT02',
                     ],
-                    'Degree_BBA' => [
-                        'BBA Principles of Management' => 'BBAMGT01',
-                        'BBA Marketing Management' => 'BBAMKT02',
+                    'Degree_BCom_Sem1' => [
+                        'BCom Financial Accounting Sem 1' => 'BCOMACC01',
+                        'BCom Business Law Sem 1' => 'BCOMLAW01',
+                    ],
+                    'Degree_BCom_Sem2' => [
+                        'BCom Corporate Accounting Sem 2' => 'BCOMCOR02',
+                    ],
+                    'Degree_BCA_Sem1' => [
+                        'BCA Programming in C Sem 1' => 'BCAPROG01',
+                        'BCA Database Management Sem 1' => 'BCADBM01',
+                    ],
+                    'Degree_BCA_Sem2' => [
+                        'BCA Data Structures Sem 2' => 'BCADS02',
+                        'BCA Computer Architecture Sem 2' => 'BCACAR02',
+                    ],
+                    'Degree_BCA_Sem5' => [
+                        'BCA Java Programming Sem 5' => 'BCAJAV05',
+                        'BCA Software Engineering Sem 5' => 'BCASE05',
+                    ],
+                    'Degree_BBA_Sem1' => [
+                        'BBA Principles of Management Sem 1' => 'BBAMGT01',
+                        'BBA Business Communication Sem 1' => 'BBACM01',
                     ],
                 ],
                 'Cotton University' => [
-                    'Degree_BA' => [
-                        'CU BA English Major' => 'CUBAENG',
-                        'CU BA Political Science' => 'CUBAPOL',
+                    'Degree_BA_Sem1' => [
+                        'CU BA English Major Sem 1' => 'CUBAENG1',
                     ],
-                    'Degree_BSc' => [
-                        'CU BSc Physics Major' => 'CUBSCPHY',
-                        'CU BSc Computer Science' => 'CUBSCCS',
+                    'Degree_BSc_Sem2' => [
+                        'CU BSc Computer Science Sem 2' => 'CUBSCCS2',
                     ],
-                    'Degree_BCom' => [
-                        'CU BCom Corporate Accounting' => 'CUBCOMACC',
-                    ],
-                    'Degree_BCA' => [
-                        'CU BCA Data Structures' => 'CUBCADS',
-                    ],
-                    'Degree_BBA' => [
-                        'CU BBA Financial Management' => 'CUBBAFIN',
+                    'Degree_BCA_Sem1' => [
+                        'CU BCA Programming in C++ Sem 1' => 'CUBCACPP1',
                     ],
                 ],
             ],
@@ -346,7 +368,21 @@ class DatabaseSeeder extends Seeder
                 $boardModel = $boardModels[$boardName];
 
                 foreach ($streams as $streamKey => $subjects) {
-                    $streamModel = $streamKey ? $streamModels[$streamKey] : null;
+                    $streamModel = null;
+                    $semesterModel = null;
+
+                    if ($streamKey) {
+                        if (str_contains($streamKey, '_Sem')) {
+                            $parts = explode('_Sem', $streamKey);
+                            $baseStreamKey = $parts[0];
+                            $semNumber = (int)$parts[1];
+
+                            $streamModel = $streamModels[$baseStreamKey] ?? null;
+                            $semesterModel = $semesterModels[$semNumber] ?? null;
+                        } else {
+                            $streamModel = $streamModels[$streamKey] ?? null;
+                        }
+                    }
 
                     foreach ($subjects as $subjectName => $subjectCode) {
                         // Create Subject
@@ -355,6 +391,7 @@ class DatabaseSeeder extends Seeder
                                 'board_id' => $boardModel->id,
                                 'name' => $subjectName,
                                 'stream_id' => $streamModel?->id,
+                                'semester_id' => $semesterModel?->id,
                             ],
                             [
                                 'code' => $subjectCode,

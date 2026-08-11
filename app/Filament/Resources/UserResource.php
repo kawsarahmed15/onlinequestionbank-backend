@@ -45,6 +45,12 @@ class UserResource extends Resource
                     ->relationship('board', 'name')
                     ->searchable()
                     ->preload(),
+                Forms\Components\Select::make('onboarded_semester_id')
+                    ->relationship('semester', 'number')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "Semester {$record->number}")
+                    ->label('Onboarded Semester')
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\Select::make('role')
                     ->options([
                         'student' => 'Student',

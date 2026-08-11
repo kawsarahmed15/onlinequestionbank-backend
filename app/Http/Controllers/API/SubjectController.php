@@ -34,6 +34,19 @@ class SubjectController extends Controller
     }
 
     /**
+     * Get list of semesters by level.
+     */
+    public function getSemesters(Request $request)
+    {
+        $query = \App\Models\Semester::query();
+        if ($request->level_id) {
+            $query->where('level_id', $request->level_id);
+        }
+        $semesters = $query->orderBy('number', 'asc')->get();
+        return response()->json(['success' => true, 'data' => $semesters]);
+    }
+
+    /**
      * Get list of boards.
      */
     public function getBoards(Request $request)
@@ -61,6 +74,9 @@ class SubjectController extends Controller
         }
         if ($request->stream_id) {
             $query->where('stream_id', $request->stream_id);
+        }
+        if ($request->semester_id) {
+            $query->where('semester_id', $request->semester_id);
         }
         $subjects = $query->orderBy('name', 'asc')->get();
         return response()->json(['success' => true, 'data' => $subjects]);

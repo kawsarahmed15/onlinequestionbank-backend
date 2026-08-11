@@ -200,6 +200,7 @@ class AuthController extends Controller
             'onboarded_level_id' => 'required|uuid|exists:levels,id',
             'onboarded_stream_id' => 'nullable|uuid|exists:streams,id',
             'onboarded_board_id' => 'required|uuid|exists:boards,id',
+            'onboarded_semester_id' => 'nullable|uuid|exists:semesters,id',
         ]);
 
         if ($validator->fails()) {
@@ -210,6 +211,7 @@ class AuthController extends Controller
             'onboarded_level_id' => $request->onboarded_level_id,
             'onboarded_stream_id' => $request->onboarded_stream_id,
             'onboarded_board_id' => $request->onboarded_board_id,
+            'onboarded_semester_id' => $request->onboarded_semester_id,
         ]);
 
         return response()->json([
