@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\UserResource\Pages;
-use App\Filament\Resources\UserResource\RelationManagers;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -11,13 +10,21 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+
+    protected static ?string $navigationLabel = 'Students';
+    protected static ?string $pluralModelLabel = 'Students';
+    protected static ?string $modelLabel = 'Student';
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('role', 'student');
+    }
 
     public static function form(Form $form): Form
     {
@@ -51,12 +58,8 @@ class UserResource extends Resource
                     ->label('Onboarded Semester')
                     ->searchable()
                     ->preload(),
-                Forms\Components\Select::make('role')
-                    ->options([
-                        'student' => 'Student',
-                        'admin' => 'Admin',
-                    ])
-                    ->required(),
+                Forms\Components\Hidden::make('role')
+                    ->default('student'),
             ]);
     }
 
@@ -75,19 +78,12 @@ class UserResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('school_college_name')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('role')
-                    ->badge()
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('role')
-                    ->options([
-                        'student' => 'Student',
-                        'admin' => 'Admin',
-                    ]),
+                // Pre-filtered
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -96,7 +92,7 @@ class UserResource extends Resource
                     ->icon('heroicon-o-arrow-path')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (\App\Models\User $record) => $record->devices()->delete()),
+                    ->action(fn (User $record) => $record->devices()->delete()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

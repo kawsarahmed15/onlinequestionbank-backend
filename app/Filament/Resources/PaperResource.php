@@ -3,31 +3,116 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PaperResource\Pages;
-use App\Filament\Resources\PaperResource\RelationManagers;
 use App\Models\Paper;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PaperResource extends Resource
 {
     protected static ?string $model = Paper::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('level_id')
+                    ->label('Class / Program')
+                    ->options(\App\Models\Level::all()->pluck('name', 'id'))
+                    ->live()
+                    ->dehydrated(false)
+                    ->afterStateHydrated(function (Set $set, $state, $record) {
+                        if ($record && $record->subject) {
+                            $subject = $record->subject;
+                            if ($subject->stream) {
+                                $set('level_id', $subject->stream->level_id);
+                            } elseif ($subject->semester) {
+                                $set('level_id', $subject->semester->level_id);
+                            } else {
+                                $classX = \App\Models\Level::where('name', 'Class X')->first();
+                                if ($classX) {
+                                    $set('level_id', $classX->id);
+                                }
+                            }
+                        }
+                    })
+                    ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
+
+                Forms\Components\Select::make('stream_id')
+                    ->label('Stream / Course')
+                    ->options(fn (Get $get) => \App\Models\Stream::where('level_id', $get('level_id'))->pluck('name', 'id'))
+                    ->live()
+                    ->dehydrated(false)
+                    ->visible(fn (Get $get) => !empty($get('level_id')) && \App\Models\Level::find($get('level_id'))?->name !== 'Class X')
+                    ->afterStateHydrated(function (Set $set, $state, $record) {
+                        if ($record && $record->subject && $record->subject->stream_id) {
+                            $set('stream_id', $record->subject->stream_id);
+                        }
+                    })
+                    ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
+
+                Forms\Components\Select::make('semester_id')
+                    ->label('Semester')
+                    ->options(fn (Get $get) => \App\Models\Semester::where('level_id', $get('level_id'))->pluck('number', 'id')->mapWithKeys(fn ($num, $id) => [$id => "Semester $num"]))
+                    ->live()
+                    ->dehydrated(false)
+                    ->visible(fn (Get $get) => !empty($get('level_id')) && \App\Models\Level::find($get('level_id'))?->name === 'Degree')
+                    ->afterStateHydrated(function (Set $set, $state, $record) {
+                        if ($record && $record->subject && $record->subject->semester_id) {
+                            $set('semester_id', $record->subject->semester_id);
+                        }
+                    })
+                    ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
+
+                Forms\Components\Select::make('board_id')
+                    ->label('Board / University')
+                    ->options(\App\Models\Board::all()->pluck('name', 'id'))
+                    ->live()
+                    ->dehydrated(false)
+                    ->required()
+                    ->afterStateHydrated(function (Set $set, $state, $record) {
+                        if ($record && $record->subject) {
+                            $set('board_id', $record->subject->board_id);
+                        }
+                    })
+                    ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
+
                 Forms\Components\Select::make('subject_id')
-                    ->relationship('subject', 'name')
+                    ->label('Subject')
                     ->required()
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->options(function (Get $get) {
+                        $boardId = $get('board_id');
+                        $streamId = $get('stream_id');
+                        $semesterId = $get('semester_id');
+                        $levelId = $get('level_id');
+
+                        if (!$boardId) return [];
+
+                        $query = \App\Models\Subject::where('board_id', $boardId);
+
+                        if ($levelId && \App\Models\Level::find($levelId)?->name === 'Class X') {
+                            $query->whereNull('stream_id')->whereNull('semester_id');
+                        } else {
+                            if ($streamId) {
+                                $query->where('stream_id', $streamId);
+                            }
+                            if ($semesterId) {
+                                $query->where('semester_id', $semesterId);
+                            }
+                        }
+
+                        return $query->pluck('name', 'id');
+                    }),
+
                 Forms\Components\TextInput::make('year')
                     ->numeric()
                     ->required()
