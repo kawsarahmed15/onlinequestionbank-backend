@@ -7,16 +7,37 @@ use App\Models\Level;
 use App\Models\Stream;
 use App\Models\Request as PaperRequest;
 use App\Models\Submission;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 Route::get('/', function (Request $request) {
-    // 1. Fetch onboarding taxonomies
+    // 1. Ensure we have a persistent Web User (Guest) session
+    $webUserId = session('web_user_id');
+    if (!$webUserId) {
+        $guestUser = User::create([
+            'id' => Str::uuid()->toString(),
+            'name' => 'Web Guest ' . Str::random(4),
+            'role' => 'student',
+            'password' => bcrypt(Str::random(16)),
+        ]);
+        session(['web_user_id' => $guestUser->id]);
+        $webUserId = $guestUser->id;
+    }
+    
+    $webUser = User::find($webUserId);
+    if (!$webUser) {
+        session()->forget('web_user_id');
+        return redirect('/');
+    }
+
+    // 2. Fetch onboarding taxonomies
     $levels = Level::orderBy('sort_order', 'asc')->get();
     $streams = Stream::all();
     $boards = Board::with('state')->orderBy('is_national', 'desc')->get();
 
-    // 2. Read current focus from session (defaults to null if not onboarded)
+    // 3. Read current focus from session
     $focusLevelId = session('focus_level_id');
     $focusStreamId = session('focus_stream_id');
     $focusBoardId = session('focus_board_id');
@@ -25,7 +46,7 @@ Route::get('/', function (Request $request) {
     $focusStream = $focusStreamId ? Stream::find($focusStreamId) : null;
     $focusBoard = $focusBoardId ? Board::find($focusBoardId) : null;
 
-    // 3. Fetch subjects matching the selected focus
+    // 4. Fetch subjects matching the selected focus
     $subjectsQuery = Subject::query()->with('board');
     if ($focusBoardId) {
         $subjectsQuery->where('board_id', $focusBoardId);
@@ -34,27 +55,38 @@ Route::get('/', function (Request $request) {
         $subjectsQuery->where('stream_id', $focusStreamId);
     }
     
-    $subjects = $subjectsQuery->withCount(['papers' => function ($query) {
+    $subjects = $focusBoardId ? $subjectsQuery->withCount(['papers' => function ($query) {
             $query->where('is_active', true);
         }])
         ->orderBy('name', 'asc')
-        ->get();
+        ->get() : collect();
 
-    // 4. Fetch general stats
-    $stats = [
-        'boards' => Board::count(),
-        'subjects' => Subject::count(),
-        'papers' => Paper::where('is_active', true)->count(),
-        'requests' => PaperRequest::count(),
-    ];
+    // 5. Fetch library views data based on '?view='
+    $currentView = $request->query('view', 'dashboard');
+    $savedPapers = collect();
+    $myRequests = collect();
+    $mySubmissions = collect();
 
-    // 5. Fetch all papers for year grids if a subject is clicked (via query parameter)
+    if ($currentView === 'saved') {
+        $savedPapers = $webUser->savedPapers()->with(['subject', 'board'])->get();
+    } elseif ($currentView === 'requests') {
+        $myRequests = PaperRequest::with('subject')
+            ->where('requested_by', $webUserId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    } elseif ($currentView === 'uploads') {
+        $mySubmissions = Submission::with('subject')
+            ->where('submitted_by', $webUserId)
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    // 6. Fetch papers for year grids if a subject is clicked
     $selectedSubject = null;
     $papersGrid = [];
     if ($request->has('subject')) {
         $selectedSubject = Subject::with('board')->find($request->subject);
         if ($selectedSubject) {
-            // Last 10 years grid range
             $currentYear = (int)date('Y');
             $expectedYears = range($currentYear, $currentYear - 9);
 
@@ -72,10 +104,15 @@ Route::get('/', function (Request $request) {
         }
     }
 
+    // Get bookmark states map for the selected subject
+    $userSavedPaperIds = $webUser->savedPapers()->pluck('papers.id')->toArray();
+
     return view('welcome', compact(
         'levels', 'streams', 'boards',
         'focusLevel', 'focusStream', 'focusBoard',
-        'subjects', 'stats', 'selectedSubject', 'papersGrid'
+        'subjects', 'selectedSubject', 'papersGrid',
+        'currentView', 'savedPapers', 'myRequests', 'mySubmissions',
+        'userSavedPaperIds'
     ));
 });
 
@@ -93,7 +130,42 @@ Route::post('/onboarding/save', function (Request $request) {
         'focus_board_id' => $request->board_id,
     ]);
 
+    // Also update onboarding details on the persistent Web User model
+    $webUserId = session('web_user_id');
+    if ($webUserId) {
+        User::where('id', $webUserId)->update([
+            'onboarded_level_id' => $request->level_id,
+            'onboarded_stream_id' => $request->stream_id,
+            'onboarded_board_id' => $request->board_id,
+        ]);
+    }
+
     return redirect('/')->with('success', 'Focus set successfully!');
+});
+
+// Stepper quick browse setup
+Route::post('/onboarding/quick-browse', function (Request $request) {
+    $request->validate([
+        'level_id' => 'required|uuid',
+        'board_id' => 'required|uuid',
+    ]);
+
+    session([
+        'focus_level_id' => $request->level_id,
+        'focus_stream_id' => $request->stream_id,
+        'focus_board_id' => $request->board_id,
+    ]);
+
+    $webUserId = session('web_user_id');
+    if ($webUserId) {
+        User::where('id', $webUserId)->update([
+            'onboarded_level_id' => $request->level_id,
+            'onboarded_stream_id' => $request->stream_id,
+            'onboarded_board_id' => $request->board_id,
+        ]);
+    }
+
+    return redirect('/?view=dashboard')->with('success', 'Dashboard view re-scoped!');
 });
 
 // Clear onboarding focus
@@ -102,7 +174,30 @@ Route::post('/onboarding/clear', function () {
     return redirect('/');
 });
 
+// Toggle bookmark on Web Panel
+Route::post('/papers/{id}/toggle-save-web', function ($id) {
+    $webUserId = session('web_user_id');
+    if (!$webUserId) return redirect()->back()->with('error', 'Session expired.');
+
+    $user = User::find($webUserId);
+    $exists = $user->savedPapers()->where('paper_id', $id)->exists();
+
+    if ($exists) {
+        $user->savedPapers()->detach($id);
+        $msg = 'Paper removed from saved.';
+    } else {
+        $user->savedPapers()->attach($id);
+        $msg = 'Paper added to saved.';
+    }
+
+    return redirect()->back()->with('success', $msg);
+});
+
+// Store requests
 Route::post('/requests/store', function (Request $request) {
+    $webUserId = session('web_user_id');
+    if (!$webUserId) return redirect()->back()->with('error', 'Session expired.');
+
     $request->validate([
         'subject_id' => 'required|uuid|exists:subjects,id',
         'year' => 'required|integer|min:2000|max:2030',
@@ -114,12 +209,17 @@ Route::post('/requests/store', function (Request $request) {
         'year' => $request->year,
         'paper_set' => $request->paper_set ?: 'A',
         'status' => 'pending',
+        'requested_by' => $webUserId,
     ]);
 
     return redirect()->back()->with('success', 'Your request has been logged successfully!');
 });
 
+// Store submissions
 Route::post('/submissions/store', function (Request $request) {
+    $webUserId = session('web_user_id');
+    if (!$webUserId) return redirect()->back()->with('error', 'Session expired.');
+
     $request->validate([
         'subject_id' => 'required|uuid|exists:subjects,id',
         'year' => 'required|integer|min:2000|max:2030',
@@ -127,14 +227,15 @@ Route::post('/submissions/store', function (Request $request) {
         'file' => 'required|file|mimes:pdf|max:10240',
     ]);
 
-    $path = $request->file('file')->store('submissions', 'private');
+    $path = $request->file('file')->store('submissions', 'public');
 
     Submission::create([
         'subject_id' => $request->subject_id,
         'year' => $request->year,
         'paper_set' => $request->paper_set ?: 'A',
-        'file_path' => $path,
+        'file_path' => '/storage/' . $path,
         'status' => 'pending',
+        'submitted_by' => $webUserId,
     ]);
 
     return redirect()->back()->with('success', 'Thank you! Your paper has been submitted for verification.');

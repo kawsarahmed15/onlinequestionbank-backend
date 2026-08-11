@@ -31,8 +31,11 @@
                         slate: '#5B6472',
                         slate2: '#8A8F9C',
                         brandRed: '#D7263D',
+                        brandRedSoft: '#FCE8EA',
                         brandGreen: '#1C7C4C',
+                        brandGreenSoft: '#E4F3EA',
                         brandAmber: '#B8860B',
+                        brandAmberSoft: '#FBF1DC',
                     }
                 }
             }
@@ -54,7 +57,7 @@
 
     <!-- Header Navigation -->
     <header class="sticky top-0 z-50 bg-white border-b-2 border-line">
-        <div class="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center space-x-3">
                 <a href="/" class="text-2xl font-bold font-display tracking-tight text-ink hover:opacity-80 transition-all">
                     Prashnpatra
@@ -64,7 +67,7 @@
                 </span>
             </div>
 
-            <!-- Profile Avatar (Matches Flutter AppBar Profile icon) -->
+            <!-- Focus badge indicator -->
             <div class="flex items-center space-x-3">
                 @if($focusLevel && $focusBoard)
                     <form action="/onboarding/clear" method="POST" class="inline">
@@ -84,14 +87,23 @@
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="max-w-4xl w-full mx-auto px-6 py-8 flex-grow">
+    <!-- Main Dynamic Layout Container -->
+    <main class="max-w-6xl w-full mx-auto px-6 py-8 flex-grow">
         @if(session('success'))
-            <div class="mb-6 p-4 bg-emerald-50 border-2 border-brandGreen/20 rounded-2xl flex items-center space-x-3 text-brandGreen">
+            <div class="mb-6 p-4 bg-emerald-50 border-2 border-brandGreen/20 rounded-2xl flex items-center space-x-3 text-brandGreen max-w-4xl mx-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
-                <span class="text-sm font-semibold">{{ session('success') }}</span>
+                <span class="text-sm font-semibold font-sans">{{ session('success') }}</span>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="mb-6 p-4 bg-red-50 border-2 border-brandRed/20 rounded-2xl flex items-center space-x-3 text-brandRed max-w-4xl mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-sm font-semibold font-sans">{{ session('error') }}</span>
             </div>
         @endif
 
@@ -102,7 +114,7 @@
             <section class="max-w-2xl mx-auto space-y-8 bg-white border-2 border-line rounded-3xl p-8 shadow-sm">
                 <div class="space-y-2 text-center">
                     <h1 class="text-3xl font-extrabold font-display tracking-tight text-ink">Choose your Focus</h1>
-                    <p class="text-sm text-slate">Match the layout, data structure, and question bank filters to your current curriculum studies.</p>
+                    <p class="text-sm text-slate font-sans">Match the layout, data structure, and question bank filters to your current curriculum studies.</p>
                 </div>
 
                 <form action="/onboarding/save" method="POST" class="space-y-6" id="onboarding-form">
@@ -124,13 +136,13 @@
                                         </span>
                                     </div>
                                     <h3 class="text-lg font-bold font-display mt-6 text-ink">{{ $level->name }}</h3>
-                                    <p class="text-xs text-slate mt-1">Syllabus papers coverage</p>
+                                    <p class="text-xs text-slate mt-1 font-sans">Syllabus papers coverage</p>
                                 </label>
                             @endforeach
                         </div>
                     </div>
 
-                    <!-- 2. Select Stream (Appears dynamically if Class XII or Degree selected) -->
+                    <!-- 2. Select Stream -->
                     <div class="space-y-3 hidden" id="stream-container">
                         <label class="block text-xs font-bold font-mono tracking-wider text-slate uppercase">2. CHOOSE STREAM</label>
                         <div class="grid grid-cols-3 gap-4">
@@ -165,7 +177,7 @@
                                         </span>
                                     </div>
                                     <h3 class="text-xl font-bold font-display mt-6 text-ink">{{ $board->name }}</h3>
-                                    <p class="text-xs text-slate mt-1">{{ $board->full_name }}</p>
+                                    <p class="text-xs text-slate mt-1 font-sans">{{ $board->full_name }}</p>
                                 </label>
                             @endforeach
                         </div>
@@ -179,144 +191,369 @@
             </section>
 
         <!-- ──────────────────────────────────────────── -->
-        <!-- DASHBOARD VIEW (Active focus set) -->
+        <!-- CORE MULTI-PANEL SYSTEM (Matching Flutter Sidebar) -->
         <!-- ──────────────────────────────────────────── -->
         @else
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
                 
-                <!-- Left/Main Section: Subjects List -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Dynamic Onboarding Focus Header Widget -->
-                    <div class="bg-white border-2 border-line rounded-3xl p-6 flex justify-between items-center shadow-sm">
-                        <div class="space-y-1">
-                            <span class="text-[10px] font-bold font-mono tracking-widest text-slate uppercase">STUDY FOCUS FOCUS</span>
-                            <div class="flex items-center space-x-2">
-                                <h2 class="text-lg font-bold font-display text-ink uppercase">
-                                    {{ $focusLevel->name }} • {{ $focusStream ? $focusStream->name . ' • ' : '' }}{{ $focusBoard->name }}
-                                </h2>
-                            </div>
-                        </div>
-                        <form action="/onboarding/clear" method="POST">
-                            @csrf
-                            <button type="submit" class="border border-line2 hover:border-slate bg-canvas text-ink text-[10px] font-bold font-mono tracking-widest px-3.5 py-2 rounded-xl transition-all">
-                                CHANGE
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Subject Search Box (Matching Flutter search bar) -->
-                    <div class="bg-white border-2 border-line rounded-3xl p-4 flex items-center space-x-3 shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input type="text" id="subject-search" placeholder="Search subjects or codes..." class="w-full bg-transparent text-sm text-ink placeholder-slate2 focus:outline-none font-medium">
-                    </div>
-
-                    <!-- Subjects List Rows -->
-                    <div class="space-y-4" id="subjects-container">
-                        <span class="text-[10px] font-bold font-mono tracking-widest text-slate uppercase px-2">YOUR DASHBOARD</span>
-                        
-                        @forelse($subjects as $subject)
-                            <div class="subject-row bg-white border-2 border-line hover:border-slate2 rounded-2xl p-5 flex justify-between items-center cursor-pointer transition-all shadow-sm" data-search="{{ strtolower($subject->name) }} {{ strtolower($subject->code) }}" onclick="window.location.href='/?subject={{ $subject->id }}'">
-                                <div class="space-y-1">
-                                    <h3 class="text-base font-bold font-display text-ink">{{ $subject->name }}</h3>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-[10px] font-semibold font-mono text-slate uppercase bg-canvas px-2 py-0.5 rounded border border-line">
-                                            {{ $subject->code ?: 'NO CODE' }}
-                                        </span>
-                                        <span class="text-[10px] font-mono text-brandGreen font-bold">
-                                            {{ $subject->papers_count }} {{ Str::plural('PAPER', $subject->papers_count) }} AVAILABLE
-                                        </span>
-                                    </div>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                <!-- Left Sidebar Navigation Widget -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white border-2 border-line rounded-3xl p-5 shadow-sm space-y-6">
+                        <!-- User Card -->
+                        <div class="pb-4 border-b border-line flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-ink flex items-center justify-center text-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </div>
-                        @empty
-                            <div class="bg-white border-2 border-line rounded-3xl p-8 text-center text-slate">
-                                <p class="text-sm font-medium">No subjects found for this class & board focus.</p>
+                            <div>
+                                <h4 class="font-bold font-display text-ink text-sm">Guest Student</h4>
+                                <span class="text-[9px] font-bold font-mono text-slate tracking-widest uppercase">WEB SESSION</span>
                             </div>
-                        @endforelse
+                        </div>
+
+                        <!-- Menu Groups -->
+                        <div class="space-y-5">
+                            <!-- BROWSE -->
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-bold font-mono tracking-widest text-slate2 uppercase block">BROWSE</span>
+                                <div class="space-y-1">
+                                    <!-- CBSE X -->
+                                    <form action="/onboarding/quick-browse" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="level_id" value="22222222-2222-2222-2222-222222222222">
+                                        <input type="hidden" name="board_id" value="55555555-5555-5555-5555-555555555555">
+                                        <button type="submit" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all hover:bg-canvas font-sans text-ink flex items-center space-x-2">
+                                            <span class="w-2 h-2 rounded-full bg-slate2"></span>
+                                            <span>Class X Boards</span>
+                                        </button>
+                                    </form>
+                                    <!-- CBSE XII -->
+                                    <form action="/onboarding/quick-browse" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="level_id" value="33333333-3333-3333-3333-333333333333">
+                                        <input type="hidden" name="stream_id" value="77777777-7777-7777-7777-777777777777">
+                                        <input type="hidden" name="board_id" value="55555555-5555-5555-5555-555555555555">
+                                        <button type="submit" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all hover:bg-canvas font-sans text-ink flex items-center space-x-2">
+                                            <span class="w-2 h-2 rounded-full bg-slate2"></span>
+                                            <span>Class XII Boards</span>
+                                        </button>
+                                    </form>
+                                    <!-- Degree CBSE -->
+                                    <form action="/onboarding/quick-browse" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="level_id" value="44444444-4444-4444-4444-444444444444">
+                                        <input type="hidden" name="board_id" value="55555555-5555-5555-5555-555555555555">
+                                        <button type="submit" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all hover:bg-canvas font-sans text-ink flex items-center space-x-2">
+                                            <span class="w-2 h-2 rounded-full bg-slate2"></span>
+                                            <span>Degree & Universities</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- LIBRARY (YOU) -->
+                            <div class="space-y-2">
+                                <span class="text-[9px] font-bold font-mono tracking-widest text-slate2 uppercase block">YOU</span>
+                                <div class="space-y-1">
+                                    <a href="/?view=dashboard" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all block hover:bg-canvas font-sans text-ink {{ $currentView === 'dashboard' ? 'bg-canvas text-ink font-bold' : '' }}">
+                                        📚 Home Dashboard
+                                    </a>
+                                    <a href="/?view=saved" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all block hover:bg-canvas font-sans text-ink {{ $currentView === 'saved' ? 'bg-canvas text-ink font-bold' : '' }}">
+                                        🔖 Saved Papers
+                                    </a>
+                                    <a href="/?view=uploads" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all block hover:bg-canvas font-sans text-ink {{ $currentView === 'uploads' ? 'bg-canvas text-ink font-bold' : '' }}">
+                                        📤 My Uploads
+                                    </a>
+                                    <a href="/?view=requests" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-xl transition-all block hover:bg-canvas font-sans text-ink {{ $currentView === 'requests' ? 'bg-canvas text-ink font-bold' : '' }}">
+                                        📝 My Requests
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Right Section: Subject Detail Years Grid Or Info Cards -->
-                <div class="lg:col-span-1 space-y-6">
-                    @if($selectedSubject)
-                        <div class="bg-white border-2 border-line rounded-3xl p-6 shadow-sm space-y-6 sticky top-24">
-                            <!-- Subject Header details -->
-                            <div class="space-y-2 pb-4 border-b border-line">
-                                <span class="text-[9px] font-mono text-slate font-bold tracking-widest uppercase">SUBJECT PAPERS GRID</span>
-                                <h3 class="text-xl font-bold font-display text-ink leading-tight">{{ $selectedSubject->name }}</h3>
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-[10px] font-semibold font-mono text-slate uppercase bg-canvas px-2 py-0.5 rounded border border-line">
-                                        CODE: {{ $selectedSubject->code ?: 'N/A' }}
-                                    </span>
+                <!-- Right 3/4 content viewport -->
+                <div class="lg:col-span-3 space-y-6">
+
+                    <!-- VIEW 1: HOME DASHBOARD -->
+                    @if($currentView === 'dashboard')
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            
+                            <!-- Left Subjects Section -->
+                            <div class="md:col-span-2 space-y-6">
+                                <!-- Study Focus badge header widget -->
+                                <div class="bg-white border-2 border-line rounded-3xl p-6 flex justify-between items-center shadow-sm">
+                                    <div class="space-y-1">
+                                        <span class="text-[10px] font-bold font-mono tracking-widest text-slate uppercase">STUDY FOCUS</span>
+                                        <h2 class="text-lg font-bold font-display text-ink uppercase">
+                                            {{ $focusLevel->name }} • {{ $focusStream ? $focusStream->name . ' • ' : '' }}{{ $focusBoard->name }}
+                                        </h2>
+                                    </div>
+                                    <form action="/onboarding/clear" method="POST">
+                                        @csrf
+                                        <button type="submit" class="border border-line2 hover:border-slate bg-canvas text-ink text-[10px] font-bold font-mono tracking-widest px-3.5 py-2 rounded-xl transition-all">
+                                            CHANGE
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Search bar -->
+                                <div class="bg-white border-2 border-line rounded-3xl p-4 flex items-center space-x-3 shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                    <input type="text" id="subject-search" placeholder="Search subjects or codes..." class="w-full bg-transparent text-sm text-ink placeholder-slate2 focus:outline-none font-medium">
+                                </div>
+
+                                <!-- List -->
+                                <div class="space-y-4" id="subjects-container">
+                                    <span class="text-[10px] font-bold font-mono tracking-widest text-slate uppercase px-2 block">YOUR SUBJECTS</span>
+                                    
+                                    @forelse($subjects as $subject)
+                                        <div class="subject-row bg-white border-2 border-line hover:border-slate2 rounded-2xl p-5 flex justify-between items-center cursor-pointer transition-all shadow-sm" data-search="{{ strtolower($subject->name) }} {{ strtolower($subject->code) }}" onclick="window.location.href='/?subject={{ $subject->id }}'">
+                                            <div class="space-y-1">
+                                                <h3 class="text-base font-bold font-display text-ink">{{ $subject->name }}</h3>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-[10px] font-semibold font-mono text-slate uppercase bg-canvas px-2 py-0.5 rounded border border-line">
+                                                        {{ $subject->code ?: 'NO CODE' }}
+                                                    </span>
+                                                    <span class="text-[10px] font-mono text-brandGreen font-bold">
+                                                        {{ $subject->papers_count }} {{ Str::plural('PAPER', $subject->papers_count) }} AVAILABLE
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </div>
+                                    @empty
+                                        <div class="bg-white border-2 border-line rounded-3xl p-8 text-center text-slate">
+                                            <p class="text-sm font-medium">No subjects found for this selection.</p>
+                                        </div>
+                                    @endforelse
                                 </div>
                             </div>
 
-                            <!-- Year List Grid (Signature digit elements) -->
-                            <div class="space-y-4">
-                                <span class="text-[10px] font-bold font-mono tracking-widest text-slate uppercase block">CHOOSE EXAM YEAR</span>
-                                
-                                <div class="grid grid-cols-1 gap-3">
-                                    @foreach($papersGrid as $year => $info)
-                                        <div class="flex items-center justify-between p-3 rounded-2xl border border-line bg-canvas/30">
-                                            <!-- Year Digit Box (Signature component #1) -->
-                                            <div class="flex items-center space-x-3">
-                                                <div class="flex space-x-1">
-                                                    @php
-                                                        $twoDigit = sprintf('%02d', $year % 100);
-                                                        $d1 = substr($twoDigit, 0, 1);
-                                                        $d2 = substr($twoDigit, 1, 1);
-                                                    @endphp
-                                                    @if($info['available'])
-                                                        <div class="w-8 h-8 rounded bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">{{ $d1 }}</div>
-                                                        <div class="w-8 h-8 rounded bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">{{ $d2 }}</div>
-                                                    @else
-                                                        <div class="w-8 h-8 rounded bg-canvas border border-dashed border-line2 text-slate2 font-mono font-bold text-sm flex items-center justify-center">{{ $d1 }}</div>
-                                                        <div class="w-8 h-8 rounded bg-canvas border border-dashed border-line2 text-slate2 font-mono font-bold text-sm flex items-center justify-center">{{ $d2 }}</div>
-                                                    @endif
-                                                </div>
-                                                <span class="text-sm font-bold font-display text-ink">{{ $year }}</span>
-                                            </div>
+                            <!-- Right Subject Grid View -->
+                            <div class="md:col-span-1 space-y-6">
+                                @if($selectedSubject)
+                                    <div class="bg-white border-2 border-line rounded-3xl p-6 shadow-sm space-y-6 sticky top-24">
+                                        <div class="space-y-2 pb-4 border-b border-line">
+                                            <span class="text-[9px] font-mono text-slate font-bold tracking-widest uppercase">SUBJECT PAPERS GRID</span>
+                                            <h3 class="text-xl font-bold font-display text-ink leading-tight">{{ $selectedSubject->name }}</h3>
+                                            <span class="inline-block text-[10px] font-semibold font-mono text-slate uppercase bg-canvas px-2 py-0.5 rounded border border-line">
+                                                CODE: {{ $selectedSubject->code ?: 'N/A' }}
+                                            </span>
+                                        </div>
 
-                                            <!-- Options triggers -->
-                                            <div>
-                                                @if($info['available'])
-                                                    <div class="space-y-1 text-right">
-                                                        @foreach($info['papers'] as $paper)
-                                                            <a href="{{ $paper->file_path }}" target="_blank" class="inline-block bg-ink text-white text-[10px] font-bold font-mono tracking-wider px-3 py-1.5 rounded-lg hover:bg-ink2 transition-all">
-                                                                SET {{ $paper->paper_set ?: 'A' }} PDF
-                                                            </a>
-                                                        @endforeach
+                                        <!-- Years Grid layout -->
+                                        <div class="space-y-4">
+                                            <span class="text-[10px] font-bold font-mono tracking-widest text-slate uppercase block">CHOOSE EXAM YEAR</span>
+                                            
+                                            <div class="grid grid-cols-1 gap-3">
+                                                @foreach($papersGrid as $year => $info)
+                                                    <div class="flex items-center justify-between p-3 rounded-2xl border border-line bg-canvas/30">
+                                                        <div class="flex items-center space-x-3">
+                                                            <!-- Year Boxes (Signature Component #1) -->
+                                                            <div class="flex space-x-1">
+                                                                @php
+                                                                    $twoDigit = sprintf('%02d', $year % 100);
+                                                                    $d1 = substr($twoDigit, 0, 1);
+                                                                    $d2 = substr($twoDigit, 1, 1);
+                                                                @endphp
+                                                                @if($info['available'])
+                                                                    <div class="w-8 h-8 rounded bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">{{ $d1 }}</div>
+                                                                    <div class="w-8 h-8 rounded bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">{{ $d2 }}</div>
+                                                                @else
+                                                                    <div class="w-8 h-8 rounded bg-canvas border border-dashed border-line2 text-slate2 font-mono font-bold text-sm flex items-center justify-center">{{ $d1 }}</div>
+                                                                    <div class="w-8 h-8 rounded bg-canvas border border-dashed border-line2 text-slate2 font-mono font-bold text-sm flex items-center justify-center">{{ $d2 }}</div>
+                                                                @endif
+                                                            </div>
+                                                            <span class="text-sm font-bold font-display text-ink">{{ $year }}</span>
+                                                        </div>
+
+                                                        <div>
+                                                            @if($info['available'])
+                                                                <div class="space-y-1 text-right flex items-center space-x-2">
+                                                                    @foreach($info['papers'] as $paper)
+                                                                        <!-- Bookmark Toggle Form -->
+                                                                        <form action="/papers/{{ $paper->id }}/toggle-save-web" method="POST" class="inline">
+                                                                            @csrf
+                                                                            <button type="submit" class="p-1 rounded-lg border border-line hover:bg-canvas">
+                                                                                @if(in_array($paper->id, $userSavedPaperIds))
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-brandRed" viewBox="0 0 20 20" fill="currentColor">
+                                                                                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                                                                                    </svg>
+                                                                                @else
+                                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                                                                    </svg>
+                                                                                @endif
+                                                                            </button>
+                                                                        </form>
+                                                                        <a href="{{ $paper->file_url }}" target="_blank" class="inline-block bg-ink text-white text-[10px] font-bold font-mono tracking-wider px-3 py-1.5 rounded-lg hover:bg-ink2 transition-all">
+                                                                            SET {{ $paper->paper_set ?: 'A' }}
+                                                                        </a>
+                                                                    @endforeach
+                                                                </div>
+                                                            @else
+                                                                <button onclick="openActionModal('{{ $year }}', '{{ $selectedSubject->id }}', '{{ $selectedSubject->name }}')" class="border border-line2 hover:border-slate text-ink text-[10px] font-bold font-mono tracking-wider px-3 py-1.5 rounded-lg bg-white transition-all">
+                                                                    CONTRIBUTE
+                                                                </button>
+                                                            @endif
+                                                        </div>
                                                     </div>
-                                                @else
-                                                    <button onclick="openActionModal('{{ $year }}', '{{ $selectedSubject->id }}', '{{ $selectedSubject->name }}')" class="border border-line2 hover:border-slate text-ink text-[10px] font-bold font-mono tracking-wider px-3 py-1.5 rounded-lg bg-white transition-all">
-                                                        CONTRIBUTE
-                                                    </button>
-                                                @endif
+                                                @endforeach
                                             </div>
                                         </div>
-                                    @endforeach
-                                </div>
+                                    </div>
+                                @else
+                                    <div class="bg-white border-2 border-line rounded-3xl p-8 text-center text-slate space-y-3">
+                                        <div class="w-12 h-12 bg-canvas rounded-full flex items-center justify-center mx-auto text-slate2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                            </svg>
+                                        </div>
+                                        <h4 class="font-bold font-display text-ink text-sm">Subject Details View</h4>
+                                        <p class="text-xs font-sans">Select any subject from the dashboard list on the left to display its available years status grid.</p>
+                                    </div>
+                                @endif
                             </div>
-                        </div>
-                    @else
-                        <!-- No subject selected empty panel -->
-                        <div class="bg-white border-2 border-line rounded-3xl p-8 text-center text-slate space-y-3">
-                            <div class="w-12 h-12 bg-canvas rounded-full flex items-center justify-center mx-auto text-slate2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                </svg>
-                            </div>
-                            <h4 class="font-bold font-display text-ink text-base">Subject Details View</h4>
-                            <p class="text-xs">Select any subject from the dashboard list on the left to display its available years status grid.</p>
                         </div>
                     @endif
-                </div>
 
+                    <!-- VIEW 2: SAVED PAPERS -->
+                    @if($currentView === 'saved')
+                        <div class="bg-white border-2 border-line rounded-3xl p-6 shadow-sm space-y-6">
+                            <div class="pb-4 border-b border-line">
+                                <span class="text-[9px] font-mono text-slate font-bold tracking-widest uppercase">YOU</span>
+                                <h2 class="text-xl font-bold font-display text-ink">Saved Papers</h2>
+                            </div>
+
+                            <div class="space-y-4">
+                                @forelse($savedPapers as $paper)
+                                    <div class="flex items-center justify-between p-4 rounded-2xl border border-line hover:border-slate2 transition-all">
+                                        <div class="flex items-center space-x-4">
+                                            <!-- Year digits -->
+                                            <div class="flex space-x-1">
+                                                @php
+                                                    $twoDigit = sprintf('%02d', $paper->year % 100);
+                                                @endphp
+                                                <div class="w-8 h-8 rounded bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">{{ substr($twoDigit, 0, 1) }}</div>
+                                                <div class="w-8 h-8 rounded bg-ink text-white font-mono font-bold text-sm flex items-center justify-center">{{ substr($twoDigit, 1, 1) }}</div>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-sm font-bold font-display text-ink">{{ $paper->subject->name ?? 'Subject' }} Paper ({{ $paper->year }})</h3>
+                                                <span class="text-[10px] font-mono text-slate font-bold">SET {{ $paper->paper_set ?: 'A' }} • {{ strtoupper($paper->exam_type) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-3">
+                                            <form action="/papers/{{ $paper->id }}/toggle-save-web" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-brandRed hover:opacity-85 text-xs font-mono font-bold border border-line px-3 py-1.5 rounded-lg">
+                                                    REMOVE
+                                                </button>
+                                            </form>
+                                            <a href="{{ $paper->file_url }}" target="_blank" class="bg-ink hover:bg-ink2 text-white text-xs font-mono font-bold px-4 py-1.5 rounded-lg">
+                                                OPEN PDF
+                                            </a>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-center py-8 text-slate space-y-2">
+                                        <p class="text-sm">No saved papers found.</p>
+                                        <p class="text-xs">Browse subjects and tap the bookmark icon to keep them saved here.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- VIEW 3: MY UPLOADS -->
+                    @if($currentView === 'uploads')
+                        <div class="bg-white border-2 border-line rounded-3xl p-6 shadow-sm space-y-6">
+                            <div class="pb-4 border-b border-line">
+                                <span class="text-[9px] font-mono text-slate font-bold tracking-widest uppercase">YOU</span>
+                                <h2 class="text-xl font-bold font-display text-ink">My Uploaded Papers</h2>
+                            </div>
+
+                            <div class="space-y-4">
+                                @forelse($mySubmissions as $sub)
+                                    @php
+                                        $status = strtolower($sub->status);
+                                        $statusBg = 'bg-brandAmberSoft text-brandAmber border-brandAmber/20';
+                                        if ($status === 'approved' || $status === 'verified') {
+                                            $statusBg = 'bg-brandGreenSoft text-brandGreen border-brandGreen/20';
+                                        } elseif ($status === 'rejected') {
+                                            $statusBg = 'bg-brandRedSoft text-brandRed border-brandRed/20';
+                                        }
+                                    @endphp
+                                    <div class="p-4 rounded-2xl border border-line bg-white space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="border px-2 py-0.5 rounded text-[9px] font-mono font-bold {{ $statusBg }}">
+                                                {{ strtoupper($status) }}
+                                            </span>
+                                            <span class="text-[9px] font-mono text-slate2 font-bold">{{ $sub->created_at->format('M d, Y') }}</span>
+                                        </div>
+                                        <h3 class="text-sm font-bold font-display text-ink">{{ $sub->subject->name ?? 'Subject' }} ({{ $sub->year }})</h3>
+                                        <span class="block text-[10px] font-mono text-slate">Set: {{ $sub->paper_set ?: 'A' }}</span>
+                                        @if($status === 'rejected' && $sub->rejection_reason)
+                                            <div class="mt-2 p-2 bg-brandRedSoft text-brandRed text-xs font-semibold rounded-lg">
+                                                Rejection Reason: {{ $sub->rejection_reason }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <div class="text-center py-8 text-slate space-y-2">
+                                        <p class="text-sm">No uploads contributed yet.</p>
+                                        <p class="text-xs">Help the catalog grow by uploading missing years from subject grids.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- VIEW 4: MY REQUESTS -->
+                    @if($currentView === 'requests')
+                        <div class="bg-white border-2 border-line rounded-3xl p-6 shadow-sm space-y-6">
+                            <div class="pb-4 border-b border-line">
+                                <span class="text-[9px] font-mono text-slate font-bold tracking-widest uppercase">YOU</span>
+                                <h2 class="text-xl font-bold font-display text-ink">My Demand Requests</h2>
+                            </div>
+
+                            <div class="space-y-4">
+                                @forelse($myRequests as $req)
+                                    @php
+                                        $status = strtolower($req->status);
+                                        $statusBg = 'bg-brandAmberSoft text-brandAmber border-brandAmber/20';
+                                        if ($status === 'approved' || $status === 'fulfilled' || $status === 'resolved') {
+                                            $statusBg = 'bg-brandGreenSoft text-brandGreen border-brandGreen/20';
+                                        } elseif ($status === 'rejected') {
+                                            $statusBg = 'bg-brandRedSoft text-brandRed border-brandRed/20';
+                                        }
+                                    @endphp
+                                    <div class="p-4 rounded-2xl border border-line bg-white space-y-2">
+                                        <div class="flex items-center justify-between">
+                                            <span class="border px-2 py-0.5 rounded text-[9px] font-mono font-bold {{ $statusBg }}">
+                                                {{ strtoupper($status) }}
+                                            </span>
+                                            <span class="text-[9px] font-mono text-slate2 font-bold">{{ $req->created_at->format('M d, Y') }}</span>
+                                        </div>
+                                        <h3 class="text-sm font-bold font-display text-ink">{{ $req->subject->name ?? 'Subject' }} ({{ $req->year }})</h3>
+                                        <span class="block text-[10px] font-mono text-slate">Requested Set: {{ $req->paper_set ?: 'A' }}</span>
+                                    </div>
+                                @empty
+                                    <div class="text-center py-8 text-slate space-y-2">
+                                        <p class="text-sm">No demands requests logged yet.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @endif
+
+                </div>
             </div>
         @endif
     </main>
@@ -337,7 +574,7 @@
                 </button>
             </div>
 
-            <!-- Options buttons toggles (Upload / Request) -->
+            <!-- Options (Upload / Request) -->
             <div class="grid grid-cols-2 gap-4" id="modal-choices">
                 <button onclick="showModalForm('upload')" class="border-2 border-line hover:border-slate p-4 rounded-2xl bg-white flex flex-col items-center justify-center space-y-2 transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -378,7 +615,7 @@
                 <input type="hidden" name="subject_id" id="request-subject-id">
                 <input type="hidden" name="year" id="request-year">
                 
-                <p class="text-xs text-slate">Logging a demand registers this missing subject paper on the admin dashboard roadmap to prioritize its catalog ingestion.</p>
+                <p class="text-xs text-slate font-sans">Logging a demand registers this missing subject paper on the admin dashboard roadmap to prioritize its catalog ingestion.</p>
                 <div class="space-y-1">
                     <label class="block text-[10px] font-bold font-mono text-slate uppercase">Paper Set/Type</label>
                     <input type="text" name="paper_set" placeholder="e.g. A, B or Supplementary" class="w-full border-2 border-line rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-slate text-ink font-medium">
@@ -392,7 +629,7 @@
 
     <!-- Footer -->
     <footer class="bg-white border-t-2 border-line py-6 mt-12">
-        <div class="max-w-4xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between text-slate text-xs font-medium gap-4">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between text-slate text-xs font-medium gap-4">
             <span class="font-mono text-[10px]">© 2026 PRASHNPATRA APP. ALL RIGHTS RESERVED.</span>
             <div class="flex space-x-6">
                 <a href="#" class="hover:text-ink transition-all">Security Engine</a>
@@ -401,12 +638,11 @@
         </div>
     </footer>
 
-    <!-- Interactive JS controllers -->
+    <!-- JS controllers -->
     <script>
-        // 1. Dynamic Onboarding Stepper logic
+        // Onboarding logic
         document.querySelectorAll('.level-card').forEach(card => {
             card.addEventListener('click', () => {
-                // Clear active selections
                 document.querySelectorAll('.level-card').forEach(c => {
                     c.classList.remove('border-ink');
                     c.querySelector('.check-indicator').classList.add('hidden');
@@ -414,12 +650,10 @@
                 card.classList.add('border-ink');
                 card.querySelector('.check-indicator').classList.remove('hidden');
                 
-                // Show streams mapping dynamically if selected XII (33333333-3333-3333-3333-333333333333) or Degree
                 const levelId = card.getAttribute('data-id');
                 const streamContainer = document.getElementById('stream-container');
                 if (levelId === '33333333-3333-3333-3333-333333333333' || levelId === '44444444-4444-4444-4444-444444444444') {
                     streamContainer.classList.remove('hidden');
-                    // filter streams
                     document.querySelectorAll('.stream-card').forEach(sc => {
                         if (sc.getAttribute('data-level') === levelId) {
                             sc.classList.remove('hidden');
@@ -429,7 +663,6 @@
                     });
                 } else {
                     streamContainer.classList.add('hidden');
-                    // Uncheck stream inputs
                     document.querySelectorAll('input[name="stream_id"]').forEach(i => i.checked = false);
                 }
             });
@@ -457,7 +690,7 @@
             });
         });
 
-        // 2. Real-time Subject list filter search
+        // Subject list filter
         const searchInput = document.getElementById('subject-search');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -473,18 +706,16 @@
             });
         }
 
-        // 3. Action Modal triggers
+        // Action Modal
         function openActionModal(year, subjectId, subjectName) {
             document.getElementById('modal-subject-name').innerText = subjectName;
             document.getElementById('modal-year-label').innerText = year;
             
-            // Set input values
             document.getElementById('upload-subject-id').value = subjectId;
             document.getElementById('upload-year').value = year;
             document.getElementById('request-subject-id').value = subjectId;
             document.getElementById('request-year').value = year;
 
-            // Reset modal state view
             document.getElementById('modal-choices').classList.remove('hidden');
             document.getElementById('modal-upload-form').classList.add('hidden');
             document.getElementById('modal-request-form').classList.add('hidden');
