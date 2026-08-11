@@ -42,40 +42,58 @@ class DatabaseSeeder extends Seeder
 
         // 3. Levels (Classes) Setup
         $levelsData = [
-            'Class X' => 1,
-            'Class XII' => 2,
-            'Degree (UG)' => 3,
+            'class-x' => [
+                'id' => '22222222-2222-2222-2222-222222222222',
+                'name' => 'Class X',
+                'sort_order' => 1,
+            ],
+            'class-xii' => [
+                'id' => '33333333-3333-3333-3333-333333333333',
+                'name' => 'Class XII',
+                'sort_order' => 2,
+            ],
+            'degree-ug' => [
+                'id' => '44444444-4444-4444-4444-444444444444',
+                'name' => 'Degree (UG)',
+                'sort_order' => 3,
+            ],
         ];
         $levelModels = [];
-        foreach ($levelsData as $name => $order) {
-            $slug = Str::slug($name);
+        foreach ($levelsData as $slug => $data) {
             $levelModels[$slug] = Level::firstOrCreate(
-                ['name' => $name],
-                ['sort_order' => $order]
+                ['id' => $data['id']],
+                [
+                    'name' => $data['name'],
+                    'sort_order' => $data['sort_order'],
+                ]
             );
         }
 
         // 4. Boards Setup
         $boardsData = [
             [
+                'id' => '55555555-5555-5555-5555-555555555555',
                 'name' => 'CBSE',
                 'full_name' => 'Central Board of Secondary Education',
                 'is_national' => true,
                 'state_slug' => 'delhi',
             ],
             [
+                'id' => '66666666-6666-6666-6666-666666666666',
                 'name' => 'AHSEC',
                 'full_name' => 'Assam Higher Secondary Education Council',
                 'is_national' => false,
                 'state_slug' => 'assam',
             ],
             [
+                'id' => '66666666-2222-2222-2222-222222222222',
                 'name' => 'MBOSE',
                 'full_name' => 'Meghalaya Board of School Education',
                 'is_national' => false,
                 'state_slug' => 'meghalaya',
             ],
             [
+                'id' => '66666666-3333-3333-3333-333333333333',
                 'name' => 'NBSE',
                 'full_name' => 'Nagaland Board of School Education',
                 'is_national' => false,
@@ -86,8 +104,9 @@ class DatabaseSeeder extends Seeder
         foreach ($boardsData as $board) {
             $stateId = isset($stateModels[$board['state_slug']]) ? $stateModels[$board['state_slug']]->id : null;
             $boardModels[$board['name']] = Board::firstOrCreate(
-                ['name' => $board['name']],
+                ['id' => $board['id']],
                 [
+                    'name' => $board['name'],
                     'full_name' => $board['full_name'],
                     'is_national' => $board['is_national'],
                     'state_id' => $stateId,
@@ -96,28 +115,35 @@ class DatabaseSeeder extends Seeder
         }
 
         // 5. Streams Setup (Applies to Class XII and Degree)
-        $streamsData = ['Science', 'Commerce', 'Arts'];
         $streamModels = [];
         
         // XII Streams
-        foreach ($streamsData as $streamName) {
-            $streamModels['XII_' . $streamName] = Stream::firstOrCreate(
-                [
-                    'level_id' => $levelModels['class-xii']->id,
-                    'name' => $streamName
-                ]
-            );
-        }
+        $streamModels['XII_Science'] = Stream::firstOrCreate(
+            ['id' => '77777777-7777-7777-7777-777777777777'],
+            ['level_id' => $levelModels['class-xii']->id, 'name' => 'Science']
+        );
+        $streamModels['XII_Commerce'] = Stream::firstOrCreate(
+            ['id' => '88888888-8888-8888-8888-888888888888'],
+            ['level_id' => $levelModels['class-xii']->id, 'name' => 'Commerce']
+        );
+        $streamModels['XII_Arts'] = Stream::firstOrCreate(
+            ['id' => '99999999-9999-9999-9999-999999999999'],
+            ['level_id' => $levelModels['class-xii']->id, 'name' => 'Arts']
+        );
         
-        // Degree Streams (Majors)
-        foreach ($streamsData as $streamName) {
-            $streamModels['Degree_' . $streamName] = Stream::firstOrCreate(
-                [
-                    'level_id' => $levelModels['degree-ug']->id,
-                    'name' => $streamName
-                ]
-            );
-        }
+        // Degree Streams
+        $streamModels['Degree_Science'] = Stream::firstOrCreate(
+            ['id' => '77777777-1111-1111-1111-111111111111'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'Science']
+        );
+        $streamModels['Degree_Commerce'] = Stream::firstOrCreate(
+            ['id' => '88888888-1111-1111-1111-111111111111'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'Commerce']
+        );
+        $streamModels['Degree_Arts'] = Stream::firstOrCreate(
+            ['id' => '99999999-1111-1111-1111-111111111111'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'Arts']
+        );
 
         // 6. Comprehensive Subjects List by Levels & Streams
         // Setup map: Level_Slug => [ Board_Name => [ Stream_Key / null => [ Subjects Name => Code ] ] ]

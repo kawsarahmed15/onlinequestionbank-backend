@@ -5,6 +5,7 @@ use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\HomeController;
 use App\Http\Controllers\API\PaperController;
 use App\Http\Controllers\API\SubjectController;
+use App\Http\Controllers\API\LibraryController;
 use App\Http\Middleware\VerifyDeviceFingerprint;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,12 @@ Route::middleware([VerifyDeviceFingerprint::class])->group(function () {
         // Crowdsourced submissions and requests
         Route::post('/submissions', [PaperController::class, 'submitPaper']);
         Route::post('/requests', [PaperController::class, 'requestPaper']);
+
+        // Library & User collections (Saved, Personal requests, Submissions)
+        Route::get('/papers/saved', [LibraryController::class, 'getSavedPapers']);
+        Route::post('/papers/{id}/save', [LibraryController::class, 'toggleSavePaper']);
+        Route::get('/my-requests', [LibraryController::class, 'getMyRequests']);
+        Route::get('/my-submissions', [LibraryController::class, 'getMySubmissions']);
 
         // Admin Management Actions
         Route::get('/admin/stats', [AdminAPIController::class, 'stats']);
