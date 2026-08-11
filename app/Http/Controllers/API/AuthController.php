@@ -81,6 +81,46 @@ class AuthController extends Controller
     }
 
     /**
+     * Log in registered user using mobile number and password/pin.
+     */
+    public function login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'mobile_number' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $user = User::where('mobile_number', $request->mobile_number)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User with this mobile number does not exist.'], 404);
+        }
+
+        if ($user->password && !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return response()->json(['success' => false, 'message' => 'Invalid password.'], 401);
+        }
+
+        // Create new token
+        $user->tokens()->delete();
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful.',
+            'data' => [
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'token' => $token,
+                'is_registered' => true,
+            ]
+        ]);
+    }
+
+    /**
      * Convert guest user into fully registered user.
      */
     public function register(Request $request)
@@ -98,6 +138,7 @@ class AuthController extends Controller
             'email' => 'nullable|email|unique:users,email,' . $user->id,
             'referral_code' => 'nullable|string',
             'bonus_subject_id' => 'nullable|uuid|exists:subjects,id', // Selected subject for email bonus
+            'password' => 'required|string|min:6',
         ]);
 
         if ($validator->fails()) {
@@ -119,6 +160,7 @@ class AuthController extends Controller
                 'mobile_number' => $request->mobile_number,
                 'school_college_name' => $request->school_college_name,
                 'email' => $request->email,
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password),
             ]);
 
             // Save referral mapping

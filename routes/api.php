@@ -17,8 +17,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware([VerifyDeviceFingerprint::class])->group(function () {
     
-    // Public/Guest Session Initialization
+    // Public/Guest Session Initialization & Login
     Route::post('/auth/guest-init', [AuthController::class, 'guestInit']);
+    Route::post('/auth/login', [AuthController::class, 'login']);
 
     // Taxonomy metadata (accessible before auth)
     Route::get('/levels', [SubjectController::class, 'getLevels']);
