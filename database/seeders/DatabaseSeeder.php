@@ -69,7 +69,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 4. Boards Setup
+        // 4. Boards & Universities Setup
         $boardsData = [
             [
                 'id' => '55555555-5555-5555-5555-555555555555',
@@ -99,6 +99,35 @@ class DatabaseSeeder extends Seeder
                 'is_national' => false,
                 'state_slug' => 'nagaland',
             ],
+            // Universities for Degree
+            [
+                'id' => '55555555-1111-1111-1111-111111111111',
+                'name' => 'Gauhati University',
+                'full_name' => 'Gauhati University (GU)',
+                'is_national' => false,
+                'state_slug' => 'assam',
+            ],
+            [
+                'id' => '55555555-2222-2222-2222-222222222222',
+                'name' => 'Cotton University',
+                'full_name' => 'Cotton University (CU)',
+                'is_national' => false,
+                'state_slug' => 'assam',
+            ],
+            [
+                'id' => '55555555-3333-3333-3333-333333333333',
+                'name' => 'Dibrugarh University',
+                'full_name' => 'Dibrugarh University (DU)',
+                'is_national' => false,
+                'state_slug' => 'assam',
+            ],
+            [
+                'id' => '55555555-4444-4444-4444-444444444444',
+                'name' => 'NEHU',
+                'full_name' => 'North-Eastern Hill University',
+                'is_national' => false,
+                'state_slug' => 'meghalaya',
+            ],
         ];
         $boardModels = [];
         foreach ($boardsData as $board) {
@@ -114,7 +143,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 5. Streams Setup (Applies to Class XII and Degree)
+        // 5. Streams Setup (Class XII Streams & Degree Courses)
         $streamModels = [];
         
         // XII Streams
@@ -131,22 +160,29 @@ class DatabaseSeeder extends Seeder
             ['level_id' => $levelModels['class-xii']->id, 'name' => 'Arts']
         );
         
-        // Degree Streams
-        $streamModels['Degree_Science'] = Stream::firstOrCreate(
-            ['id' => '77777777-1111-1111-1111-111111111111'],
-            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'Science']
+        // Degree Courses/Streams
+        $streamModels['Degree_BA'] = Stream::firstOrCreate(
+            ['id' => '77777777-1111-1111-1111-222222222222'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'BA']
         );
-        $streamModels['Degree_Commerce'] = Stream::firstOrCreate(
-            ['id' => '88888888-1111-1111-1111-111111111111'],
-            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'Commerce']
+        $streamModels['Degree_BSc'] = Stream::firstOrCreate(
+            ['id' => '77777777-2222-2222-2222-222222222222'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'BSc']
         );
-        $streamModels['Degree_Arts'] = Stream::firstOrCreate(
-            ['id' => '99999999-1111-1111-1111-111111111111'],
-            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'Arts']
+        $streamModels['Degree_BCom'] = Stream::firstOrCreate(
+            ['id' => '77777777-3333-3333-3333-222222222222'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'BCom']
+        );
+        $streamModels['Degree_BCA'] = Stream::firstOrCreate(
+            ['id' => '77777777-4444-4444-4444-222222222222'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'BCA']
+        );
+        $streamModels['Degree_BBA'] = Stream::firstOrCreate(
+            ['id' => '77777777-5555-5555-5555-222222222222'],
+            ['level_id' => $levelModels['degree-ug']->id, 'name' => 'BBA']
         );
 
         // 6. Comprehensive Subjects List by Levels & Streams
-        // Setup map: Level_Slug => [ Board_Name => [ Stream_Key / null => [ Subjects Name => Code ] ] ]
         $subjectsMapping = [
             'class-x' => [
                 'CBSE' => [
@@ -253,22 +289,50 @@ class DatabaseSeeder extends Seeder
                 ],
             ],
             'degree-ug' => [
-                'CBSE' => [ // Maps standard central university syllabus mockup under national board context
-                    'Degree_Science' => [
-                        'Physics Major Sem 1' => 'PHYM1',
-                        'Chemistry Major Sem 1' => 'CHEM1',
-                        'Mathematics Major Sem 1' => 'MATH1',
+                'Gauhati University' => [
+                    'Degree_BA' => [
+                        'BA English Literature Major' => 'BAENG01',
+                        'BA History Major' => 'BAHIS02',
+                        'BA Political Science Major' => 'BAPOL03',
                     ],
-                    'Degree_Commerce' => [
-                        'Financial Accounting Sem 1' => 'FAC1',
-                        'Business Law Sem 1' => 'BLW1',
+                    'Degree_BSc' => [
+                        'BSc Physics Major' => 'BSCPHY01',
+                        'BSc Chemistry Major' => 'BSCCHE02',
+                        'BSc Mathematics Major' => 'BSCMAT03',
                     ],
-                    'Degree_Arts' => [
-                        'English Literature Sem 1' => 'ELIT1',
-                        'Political Science Sem 1' => 'POLI1',
-                    ]
-                ]
-            ]
+                    'Degree_BCom' => [
+                        'BCom Financial Accounting' => 'BCOMACC01',
+                        'BCom Business Law' => 'BCOMLAW02',
+                    ],
+                    'Degree_BCA' => [
+                        'BCA Programming in C' => 'BCAPROG01',
+                        'BCA Database Management' => 'BCADBM02',
+                    ],
+                    'Degree_BBA' => [
+                        'BBA Principles of Management' => 'BBAMGT01',
+                        'BBA Marketing Management' => 'BBAMKT02',
+                    ],
+                ],
+                'Cotton University' => [
+                    'Degree_BA' => [
+                        'CU BA English Major' => 'CUBAENG',
+                        'CU BA Political Science' => 'CUBAPOL',
+                    ],
+                    'Degree_BSc' => [
+                        'CU BSc Physics Major' => 'CUBSCPHY',
+                        'CU BSc Computer Science' => 'CUBSCCS',
+                    ],
+                    'Degree_BCom' => [
+                        'CU BCom Corporate Accounting' => 'CUBCOMACC',
+                    ],
+                    'Degree_BCA' => [
+                        'CU BCA Data Structures' => 'CUBCADS',
+                    ],
+                    'Degree_BBA' => [
+                        'CU BBA Financial Management' => 'CUBBAFIN',
+                    ],
+                ],
+            ],
         ];
 
         // 7. Seed Subjects & Previous Year Papers (Looping years 2015 to 2025)
