@@ -112,81 +112,111 @@
         <!-- ──────────────────────────────────────────── -->
         @if(!$focusLevel || !$focusBoard)
             <section class="max-w-2xl mx-auto space-y-8 bg-white border-2 border-line rounded-3xl p-8 shadow-sm">
-                <div class="space-y-2 text-center">
-                    <h1 class="text-3xl font-extrabold font-display tracking-tight text-ink">Choose your Focus</h1>
-                    <p class="text-sm text-slate font-sans">Match the layout, data structure, and question bank filters to your current curriculum studies.</p>
+                <!-- Step progress track -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs font-mono font-bold text-slate uppercase">
+                        <span>Progress</span>
+                        <span id="step-percentage">0% Complete</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-line rounded-full overflow-hidden">
+                        <div id="step-progress-bar" class="h-full bg-ink transition-all duration-300" style="width: 0%;"></div>
+                    </div>
                 </div>
 
+                <!-- Form container -->
                 <form action="/onboarding/save" method="POST" class="space-y-6" id="onboarding-form">
                     @csrf
+                    
+                    <!-- Hidden inputs to store selections -->
+                    <input type="hidden" name="level_id" id="hidden-level-id" required>
+                    <input type="hidden" name="stream_id" id="hidden-stream-id">
+                    <input type="hidden" name="board_id" id="hidden-board-id" required>
+                    <input type="hidden" name="semester_id" id="hidden-semester-id">
 
-                    <!-- 1. Select Class/Level -->
-                    <div class="space-y-3">
-                        <label class="block text-xs font-bold font-mono tracking-wider text-slate uppercase">1. CHOOSE CLASS / LEVEL</label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- STEP 1: Academic Level -->
+                    <div class="onboarding-step space-y-6" id="step-level">
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-extrabold font-display tracking-tight text-ink">Select Academic Level</h2>
+                            <p class="text-sm text-slate">Choose your current academic grade or level of study.</p>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3">
                             @foreach($levels as $level)
-                                <label class="level-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-5 bg-white flex flex-col justify-between transition-all" data-id="{{ $level->id }}">
-                                    <input type="radio" name="level_id" value="{{ $level->id }}" required class="sr-only">
-                                    <div class="flex justify-between items-start">
-                                        <div class="bg-canvas border border-line rounded-full w-8 h-8 flex items-center justify-center text-xs font-mono font-bold text-ink">
+                                <div class="option-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-5 bg-white flex items-center justify-between transition-all" data-value="{{ $level->id }}" onclick="selectLevel('{{ $level->id }}')">
+                                    <div class="flex items-center space-x-4">
+                                        <div class="bg-canvas border border-line rounded-full w-10 h-10 flex items-center justify-center text-xs font-mono font-bold text-ink">
                                             L{{ $level->sort_order }}
                                         </div>
-                                        <span class="check-indicator hidden w-4 h-4 bg-ink rounded-full flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                                        </span>
+                                        <div>
+                                            <h3 class="text-base font-bold font-display text-ink">{{ $level->name }}</h3>
+                                            <p class="text-xs text-slate mt-0.5">{{ $level->description ?: 'Syllabus papers coverage' }}</p>
+                                        </div>
                                     </div>
-                                    <h3 class="text-lg font-bold font-display mt-6 text-ink">{{ $level->name }}</h3>
-                                    <p class="text-xs text-slate mt-1 font-sans">Syllabus papers coverage</p>
-                                </label>
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                </div>
                             @endforeach
                         </div>
                     </div>
 
-                    <!-- 2. Select Stream -->
-                    <div class="space-y-3 hidden" id="stream-container">
-                        <label class="block text-xs font-bold font-mono tracking-wider text-slate uppercase">2. CHOOSE STREAM</label>
-                        <div class="grid grid-cols-3 gap-4">
-                            @foreach($streams as $stream)
-                                <label class="stream-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-5 bg-white flex flex-col justify-between transition-all" data-level="{{ $stream->level_id }}" data-id="{{ $stream->id }}">
-                                    <input type="radio" name="stream_id" value="{{ $stream->id }}" class="sr-only">
-                                    <div class="flex justify-between items-center w-full">
-                                        <span class="text-sm font-semibold font-mono text-slate">STREAM</span>
-                                        <span class="check-indicator hidden w-4 h-4 bg-ink rounded-full flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                                        </span>
-                                    </div>
-                                    <h3 class="text-lg font-bold font-display mt-4 text-ink">{{ $stream->name }}</h3>
-                                </label>
-                            @endforeach
+                    <!-- STEP 2: Stream / Course -->
+                    <div class="onboarding-step space-y-6 hidden" id="step-stream">
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-extrabold font-display tracking-tight text-ink" id="stream-step-title">Select Stream</h2>
+                            <p class="text-sm text-slate" id="stream-step-desc">Choose your specific course or stream.</p>
                         </div>
+                        <div class="grid grid-cols-1 gap-3" id="stream-options-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                        <button type="button" onclick="goBack()" class="border border-line hover:bg-canvas text-ink font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition-all">BACK</button>
                     </div>
 
-                    <!-- 3. Select Board -->
-                    <div class="space-y-3">
-                        <label class="block text-xs font-bold font-mono tracking-wider text-slate uppercase">3. CHOOSE EDUCATION BOARD</label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($boards as $board)
-                                <label class="board-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-5 bg-white flex flex-col justify-between transition-all" data-id="{{ $board->id }}">
-                                    <input type="radio" name="board_id" value="{{ $board->id }}" required class="sr-only">
-                                    <div class="flex justify-between items-start">
-                                        <span class="text-[10px] font-bold font-mono tracking-wider uppercase bg-canvas text-ink px-2 py-0.5 rounded border border-line">
-                                            {{ $board->is_national ? 'National' : ($board->state->name ?? 'State') }}
-                                        </span>
-                                        <span class="check-indicator hidden w-4 h-4 bg-ink rounded-full flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                                        </span>
-                                    </div>
-                                    <h3 class="text-xl font-bold font-display mt-6 text-ink">{{ $board->name }}</h3>
-                                    <p class="text-xs text-slate mt-1 font-sans">{{ $board->full_name }}</p>
-                                </label>
-                            @endforeach
+                    <!-- STEP 3: Board / University -->
+                    <div class="onboarding-step space-y-6 hidden" id="step-board">
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-extrabold font-display tracking-tight text-ink" id="board-step-title">Choose Board</h2>
+                            <p class="text-sm text-slate" id="board-step-desc">Select the board or university you study under.</p>
                         </div>
+                        <!-- Search input -->
+                        <div class="bg-white border-2 border-line rounded-2xl p-3 flex items-center space-x-3 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                            <input type="text" id="board-search-input" placeholder="Search by name..." class="w-full bg-transparent text-sm text-ink placeholder-slate2 focus:outline-none font-medium">
+                        </div>
+                        <div class="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto pr-1" id="board-options-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                        <button type="button" onclick="goBack()" class="border border-line hover:bg-canvas text-ink font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition-all">BACK</button>
                     </div>
 
-                    <!-- Submit Focus Button (Stepper CTA) -->
-                    <button type="submit" class="w-full bg-ink text-white font-mono font-bold tracking-widest text-xs py-4 rounded-xl hover:bg-ink2 transition-all">
-                        LOCK FOCUS & CONTINUE
-                    </button>
+                    <!-- STEP 4: Semester -->
+                    <div class="onboarding-step space-y-6 hidden" id="step-semester">
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-extrabold font-display tracking-tight text-ink" id="semester-step-title">Select Semester</h2>
+                            <p class="text-sm text-slate" id="semester-step-desc">Choose your current semester of study.</p>
+                        </div>
+                        <div class="grid grid-cols-1 gap-3" id="semester-options-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                        <button type="button" onclick="goBack()" class="border border-line hover:bg-canvas text-ink font-mono font-bold text-xs px-6 py-2.5 rounded-xl transition-all">BACK</button>
+                    </div>
+
+                    <!-- STEP 5: Subject Selection -->
+                    <div class="onboarding-step space-y-6 hidden" id="step-subjects">
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-extrabold font-display tracking-tight text-ink">Select Subjects</h2>
+                            <p class="text-sm text-slate">Choose the subjects you want to pin on your dashboard.</p>
+                        </div>
+                        
+                        <!-- Subjects selection list/grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="subjects-selection-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <div class="flex items-center space-x-3 pt-4">
+                            <button type="button" onclick="goBack()" class="border border-line hover:bg-canvas text-ink font-mono font-bold text-xs px-6 py-3.5 rounded-xl transition-all">BACK</button>
+                            <button type="submit" class="flex-grow bg-ink text-white font-mono font-bold tracking-widest text-xs py-3.5 rounded-xl hover:bg-ink2 transition-all">
+                                LOCK FOCUS & CONTINUE
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </section>
 
@@ -640,55 +670,270 @@
 
     <!-- JS controllers -->
     <script>
-        // Onboarding logic
-        document.querySelectorAll('.level-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.level-card').forEach(c => {
-                    c.classList.remove('border-ink');
-                    c.querySelector('.check-indicator').classList.add('hidden');
-                });
-                card.classList.add('border-ink');
-                card.querySelector('.check-indicator').classList.remove('hidden');
+        // Dynamic taxonomy data passed from Blade
+        const levels = @json($levels);
+        const streams = @json($streams);
+        const boards = @json($boards);
+        const semesters = @json($semesters);
+
+        let currentStepIndex = 0;
+        let stepsOrder = [];
+
+        let selectedLevelId = null;
+        let selectedStreamId = null;
+        let selectedBoardId = null;
+        let selectedSemesterId = null;
+        let selectedSubjectIds = [];
+
+        function updateProgress() {
+            if (stepsOrder.length <= 1) return;
+            const progressPct = Math.round((currentStepIndex / (stepsOrder.length - 1)) * 100);
+            document.getElementById('step-percentage').innerText = progressPct + '% Complete';
+            document.getElementById('step-progress-bar').style.width = progressPct + '%';
+        }
+
+        function showStep(stepId) {
+            document.querySelectorAll('.onboarding-step').forEach(step => {
+                step.classList.add('hidden');
+            });
+            document.getElementById('step-' + stepId).classList.remove('hidden');
+            updateProgress();
+        }
+
+        function selectLevel(levelId) {
+            selectedLevelId = levelId;
+            document.getElementById('hidden-level-id').value = levelId;
+
+            selectedStreamId = null;
+            selectedBoardId = null;
+            selectedSemesterId = null;
+            selectedSubjectIds = [];
+            document.getElementById('hidden-stream-id').value = '';
+            document.getElementById('hidden-board-id').value = '';
+            document.getElementById('hidden-semester-id').value = '';
+            
+            // Remove any previously added hidden subject inputs
+            document.querySelectorAll('input[name="subject_ids[]"]').forEach(el => el.remove());
+
+            const level = levels.find(l => l.id === levelId);
+            const config = level.onboarding_config || {};
+
+            stepsOrder = ['level'];
+            if (config.requires_stream) stepsOrder.push('stream');
+            if (config.requires_board) stepsOrder.push('board');
+            if (config.requires_semester) stepsOrder.push('semester');
+            stepsOrder.push('subjects');
+
+            if (config.requires_stream) {
+                const streamList = document.getElementById('stream-options-list');
+                streamList.innerHTML = '';
                 
-                const levelId = card.getAttribute('data-id');
-                const streamContainer = document.getElementById('stream-container');
-                if (levelId === '33333333-3333-3333-3333-333333333333' || levelId === '44444444-4444-4444-4444-444444444444') {
-                    streamContainer.classList.remove('hidden');
-                    document.querySelectorAll('.stream-card').forEach(sc => {
-                        if (sc.getAttribute('data-level') === levelId) {
-                            sc.classList.remove('hidden');
-                        } else {
-                            sc.classList.add('hidden');
-                        }
+                document.getElementById('stream-step-title').innerText = 'Select ' + (config.stream_label || 'Stream');
+                document.getElementById('stream-step-desc').innerText = config.step_descriptions?.stream || 'Choose your specific course or stream.';
+
+                const levelStreams = streams.filter(s => s.level_id === levelId);
+                levelStreams.forEach(stream => {
+                    const card = document.createElement('div');
+                    card.className = 'option-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-5 bg-white flex items-center justify-between transition-all';
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-xs font-mono font-bold text-slate">🎓</span>
+                            <span class="text-lg font-bold font-display text-ink">${stream.name}</span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    `;
+                    card.onclick = () => selectStream(stream.id);
+                    streamList.appendChild(card);
+                });
+            }
+
+            if (config.requires_board) {
+                document.getElementById('board-step-title').innerText = 'Choose ' + (config.board_label || 'Board');
+                document.getElementById('board-step-desc').innerText = config.step_descriptions?.board || 'Select the board or university you study under.';
+                
+                renderBoards(config.board_filter_type);
+                
+                const searchInput = document.getElementById('board-search-input');
+                searchInput.value = '';
+                searchInput.placeholder = config.board_placeholder || 'Search...';
+                searchInput.oninput = (e) => {
+                    renderBoards(config.board_filter_type, e.target.value);
+                };
+            }
+
+            if (config.requires_semester) {
+                const semList = document.getElementById('semester-options-list');
+                semList.innerHTML = '';
+                document.getElementById('semester-step-title').innerText = 'Choose ' + (config.semester_label || 'Semester');
+                document.getElementById('semester-step-desc').innerText = config.step_descriptions?.semester || 'Select your current semester.';
+
+                const levelSemesters = semesters.filter(s => s.level_id === levelId);
+                levelSemesters.forEach(sem => {
+                    const card = document.createElement('div');
+                    card.className = 'option-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-5 bg-white flex items-center justify-between transition-all';
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="w-8 h-8 rounded-full bg-canvas flex items-center justify-center text-xs font-mono font-bold text-slate">📅</span>
+                            <span class="text-lg font-bold font-display text-ink">${config.semester_label || 'Semester'} ${sem.number}</span>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    `;
+                    card.onclick = () => selectSemester(sem.id);
+                    semList.appendChild(card);
+                });
+            }
+
+            currentStepIndex = 1;
+            showStep(stepsOrder[currentStepIndex]);
+        }
+
+        function selectStream(streamId) {
+            selectedStreamId = streamId;
+            document.getElementById('hidden-stream-id').value = streamId;
+
+            currentStepIndex = stepsOrder.indexOf('stream') + 1;
+            showStep(stepsOrder[currentStepIndex]);
+        }
+
+        function renderBoards(filterType, query = '') {
+            const boardList = document.getElementById('board-options-list');
+            boardList.innerHTML = '';
+
+            let filteredBoards = boards;
+
+            if (filterType === 'university') {
+                filteredBoards = boards.filter(b => b.name.toLowerCase().includes('university') || (b.full_name && b.full_name.toLowerCase().includes('university')));
+            } else if (filterType === 'board') {
+                filteredBoards = boards.filter(b => !b.name.toLowerCase().includes('university') && !(b.full_name && b.full_name.toLowerCase().includes('university')));
+            }
+
+            if (query.trim() !== '') {
+                const q = query.toLowerCase();
+                filteredBoards = filteredBoards.filter(b => b.name.toLowerCase().includes(q) || (b.full_name && b.full_name.toLowerCase().includes(q)));
+            }
+
+            if (filteredBoards.length === 0) {
+                boardList.innerHTML = '<p class="text-sm text-slate py-4 text-center">No boards or universities found matching your search.</p>';
+                return;
+            }
+
+            filteredBoards.forEach(board => {
+                const card = document.createElement('div');
+                card.className = 'option-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-4 bg-white flex items-center justify-between transition-all';
+                card.innerHTML = `
+                    <div>
+                        <span class="text-[9px] font-bold font-mono tracking-wider uppercase bg-canvas text-ink px-2 py-0.5 rounded border border-line">
+                            ${board.is_national ? 'National' : (board.state?.name ?? 'State')}
+                        </span>
+                        <h3 class="text-base font-bold font-display mt-2 text-ink">${board.name}</h3>
+                        <p class="text-xs text-slate mt-0.5">${board.full_name || 'State examination council'}</p>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                `;
+                card.onclick = () => selectBoard(board.id);
+                boardList.appendChild(card);
+            });
+        }
+
+        function selectBoard(boardId) {
+            selectedBoardId = boardId;
+            document.getElementById('hidden-board-id').value = boardId;
+
+            currentStepIndex = stepsOrder.indexOf('board') + 1;
+            showStep(stepsOrder[currentStepIndex]);
+
+            if (stepsOrder[currentStepIndex] === 'subjects') {
+                fetchOnboardingSubjects();
+            }
+        }
+
+        function selectSemester(semesterId) {
+            selectedSemesterId = semesterId;
+            document.getElementById('hidden-semester-id').value = semesterId;
+
+            currentStepIndex = stepsOrder.indexOf('semester') + 1;
+            showStep(stepsOrder[currentStepIndex]);
+
+            fetchOnboardingSubjects();
+        }
+
+        function fetchOnboardingSubjects() {
+            const listContainer = document.getElementById('subjects-selection-list');
+            listContainer.innerHTML = '<div class="col-span-full py-8 flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-ink"></div></div>';
+
+            let url = `/web/subjects?board_id=${selectedBoardId}`;
+            if (selectedStreamId) url += `&stream_id=${selectedStreamId}`;
+            if (selectedSemesterId) url += `&semester_id=${selectedSemesterId}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(json => {
+                    const list = json.data || [];
+                    listContainer.innerHTML = '';
+                    if (list.length === 0) {
+                        listContainer.innerHTML = '<p class="text-sm text-slate py-8 col-span-full text-center">No subjects found for this scope. Lock focus to proceed to dashboard.</p>';
+                        return;
+                    }
+                    
+                    list.forEach(subject => {
+                        const card = document.createElement('div');
+                        card.className = 'subject-select-card cursor-pointer border-2 border-line hover:border-slate rounded-2xl p-4 bg-white flex items-center justify-between transition-all select-none';
+                        card.setAttribute('data-id', subject.id);
+                        card.innerHTML = `
+                            <div class="space-y-1">
+                                <h4 class="text-sm font-bold text-ink">${subject.name}</h4>
+                                <span class="inline-block text-[9px] font-mono font-bold text-slate bg-canvas px-1.5 py-0.5 rounded border border-line">
+                                    ${subject.code || 'SUBJ'}
+                                </span>
+                            </div>
+                            <div class="checkbox-indicator w-5 h-5 rounded border border-line2 flex items-center justify-center transition-all bg-white">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-white hidden" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            </div>
+                        `;
+                        
+                        card.onclick = () => {
+                            const indicator = card.querySelector('.checkbox-indicator');
+                            const checkIcon = indicator.querySelector('svg');
+                            const subId = subject.id;
+                            
+                            const index = selectedSubjectIds.indexOf(subId);
+                            if (index > -1) {
+                                selectedSubjectIds.splice(index, 1);
+                                card.classList.remove('border-ink');
+                                indicator.classList.remove('bg-ink', 'border-ink');
+                                indicator.classList.add('bg-white', 'border-line2');
+                                checkIcon.classList.add('hidden');
+                                const input = document.getElementById('subject-input-' + subId);
+                                if (input) input.remove();
+                            } else {
+                                selectedSubjectIds.push(subId);
+                                card.classList.add('border-ink');
+                                indicator.classList.remove('bg-white', 'border-line2');
+                                indicator.classList.add('bg-ink', 'border-ink');
+                                checkIcon.classList.remove('hidden');
+                                const input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'subject_ids[]';
+                                input.value = subId;
+                                input.id = 'subject-input-' + subId;
+                                document.getElementById('onboarding-form').appendChild(input);
+                            }
+                        };
+                        
+                        listContainer.appendChild(card);
                     });
-                } else {
-                    streamContainer.classList.add('hidden');
-                    document.querySelectorAll('input[name="stream_id"]').forEach(i => i.checked = false);
-                }
-            });
-        });
-
-        document.querySelectorAll('.stream-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.stream-card').forEach(c => {
-                    c.classList.remove('border-ink');
-                    c.querySelector('.check-indicator').classList.add('hidden');
+                })
+                .catch(err => {
+                    listContainer.innerHTML = '<p class="text-sm text-brandRed py-8 col-span-full text-center">Failed to load subjects. Please check connection and try again.</p>';
                 });
-                card.classList.add('border-ink');
-                card.querySelector('.check-indicator').classList.remove('hidden');
-            });
-        });
+        }
 
-        document.querySelectorAll('.board-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.board-card').forEach(c => {
-                    c.classList.remove('border-ink');
-                    c.querySelector('.check-indicator').classList.add('hidden');
-                });
-                card.classList.add('border-ink');
-                card.querySelector('.check-indicator').classList.remove('hidden');
-            });
-        });
+        function goBack() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                showStep(stepsOrder[currentStepIndex]);
+            }
+        }
 
         // Subject list filter
         const searchInput = document.getElementById('subject-search');

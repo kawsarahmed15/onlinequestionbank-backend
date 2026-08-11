@@ -36,23 +36,38 @@ Route::get('/', function (Request $request) {
     $levels = Level::orderBy('sort_order', 'asc')->get();
     $streams = Stream::all();
     $boards = Board::with('state')->orderBy('is_national', 'desc')->get();
+    $semesters = \App\Models\Semester::orderBy('number', 'asc')->get();
 
     // 3. Read current focus from session
     $focusLevelId = session('focus_level_id');
     $focusStreamId = session('focus_stream_id');
     $focusBoardId = session('focus_board_id');
+    $focusSemesterId = session('focus_semester_id');
 
     $focusLevel = $focusLevelId ? Level::find($focusLevelId) : null;
     $focusStream = $focusStreamId ? Stream::find($focusStreamId) : null;
     $focusBoard = $focusBoardId ? Board::find($focusBoardId) : null;
+    $focusSemester = $focusSemesterId ? \App\Models\Semester::find($focusSemesterId) : null;
 
     // 4. Fetch subjects matching the selected focus
-    $subjectsQuery = Subject::query()->with('board');
-    if ($focusBoardId) {
-        $subjectsQuery->where('board_id', $focusBoardId);
-    }
-    if ($focusStreamId) {
-        $subjectsQuery->where('stream_id', $focusStreamId);
+    $subjectsQuery = Subject::query();
+    
+    // Check if user has pinned subjects
+    $pinnedSubjectIds = $webUser->subjects()->pluck('subjects.id')->toArray();
+    if (count($pinnedSubjectIds) > 0) {
+        $subjectsQuery->whereIn('id', $pinnedSubjectIds);
+    } else {
+        if ($focusBoardId) {
+            $subjectsQuery->whereHas('relations', function ($q) use ($focusBoardId, $focusStreamId, $focusSemesterId) {
+                $q->where('board_id', $focusBoardId);
+                if ($focusStreamId) {
+                    $q->where('stream_id', $focusStreamId);
+                }
+                if ($focusSemesterId) {
+                    $q->where('semester_id', $focusSemesterId);
+                }
+            });
+        }
     }
     
     $subjects = $focusBoardId ? $subjectsQuery->withCount(['papers' => function ($query) {
@@ -85,7 +100,7 @@ Route::get('/', function (Request $request) {
     $selectedSubject = null;
     $papersGrid = [];
     if ($request->has('subject')) {
-        $selectedSubject = Subject::with('board')->find($request->subject);
+        $selectedSubject = Subject::find($request->subject);
         if ($selectedSubject) {
             $currentYear = (int)date('Y');
             $expectedYears = range($currentYear, $currentYear - 9);
@@ -108,8 +123,8 @@ Route::get('/', function (Request $request) {
     $userSavedPaperIds = $webUser->savedPapers()->pluck('papers.id')->toArray();
 
     return view('welcome', compact(
-        'levels', 'streams', 'boards',
-        'focusLevel', 'focusStream', 'focusBoard',
+        'levels', 'streams', 'boards', 'semesters',
+        'focusLevel', 'focusStream', 'focusBoard', 'focusSemester',
         'subjects', 'selectedSubject', 'papersGrid',
         'currentView', 'savedPapers', 'myRequests', 'mySubmissions',
         'userSavedPaperIds'
@@ -122,12 +137,15 @@ Route::post('/onboarding/save', function (Request $request) {
         'level_id' => 'required|uuid|exists:levels,id',
         'stream_id' => 'nullable|uuid|exists:streams,id',
         'board_id' => 'required|uuid|exists:boards,id',
+        'semester_id' => 'nullable|uuid|exists:semesters,id',
+        'subject_ids' => 'nullable|array',
     ]);
 
     session([
         'focus_level_id' => $request->level_id,
         'focus_stream_id' => $request->stream_id,
         'focus_board_id' => $request->board_id,
+        'focus_semester_id' => $request->semester_id,
     ]);
 
     // Also update onboarding details on the persistent Web User model
@@ -137,7 +155,13 @@ Route::post('/onboarding/save', function (Request $request) {
             'onboarded_level_id' => $request->level_id,
             'onboarded_stream_id' => $request->stream_id,
             'onboarded_board_id' => $request->board_id,
+            'onboarded_semester_id' => $request->semester_id,
         ]);
+        
+        $user = User::find($webUserId);
+        if ($user && $request->has('subject_ids')) {
+            $user->subjects()->sync($request->subject_ids);
+        }
     }
 
     return redirect('/')->with('success', 'Focus set successfully!');
@@ -148,12 +172,15 @@ Route::post('/onboarding/quick-browse', function (Request $request) {
     $request->validate([
         'level_id' => 'required|uuid',
         'board_id' => 'required|uuid',
+        'stream_id' => 'nullable|uuid',
+        'semester_id' => 'nullable|uuid',
     ]);
 
     session([
         'focus_level_id' => $request->level_id,
         'focus_stream_id' => $request->stream_id,
         'focus_board_id' => $request->board_id,
+        'focus_semester_id' => $request->semester_id,
     ]);
 
     $webUserId = session('web_user_id');
@@ -162,6 +189,7 @@ Route::post('/onboarding/quick-browse', function (Request $request) {
             'onboarded_level_id' => $request->level_id,
             'onboarded_stream_id' => $request->stream_id,
             'onboarded_board_id' => $request->board_id,
+            'onboarded_semester_id' => $request->semester_id,
         ]);
     }
 
@@ -170,7 +198,7 @@ Route::post('/onboarding/quick-browse', function (Request $request) {
 
 // Clear onboarding focus
 Route::post('/onboarding/clear', function () {
-    session()->forget(['focus_level_id', 'focus_stream_id', 'focus_board_id']);
+    session()->forget(['focus_level_id', 'focus_stream_id', 'focus_board_id', 'focus_semester_id']);
     return redirect('/');
 });
 
@@ -254,4 +282,21 @@ Route::get('/run-migrations', function () {
     } catch (\Exception $e) {
         echo "<b>Migration Failed:</b> " . $e->getMessage();
     }
+});
+
+// JSON endpoint for web client subject fetching (bypass fingerprint headers)
+Route::get('/web/subjects', function (Request $request) {
+    $query = Subject::query();
+    $query->whereHas('relations', function ($q) use ($request) {
+        if ($request->board_id) {
+            $q->where('board_id', $request->board_id);
+        }
+        if ($request->stream_id) {
+            $q->where('stream_id', $request->stream_id);
+        }
+        if ($request->semester_id) {
+            $q->where('semester_id', $request->semester_id);
+        }
+    });
+    return response()->json(['success' => true, 'data' => $query->orderBy('name', 'asc')->get()]);
 });
