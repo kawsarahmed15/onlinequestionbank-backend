@@ -23,26 +23,34 @@ class SubjectResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('board_id')
-                    ->relationship('board', 'name')
-                    ->required()
-                    ->searchable()
-                    ->preload(),
-                Forms\Components\Select::make('stream_id')
-                    ->relationship('stream', 'name')
-                    ->searchable()
-                    ->preload(),
-                Forms\Components\Select::make('semester_id')
-                    ->relationship('semester', 'number')
-                    ->getOptionLabelFromRecordUsing(fn ($record) => "Semester {$record->number}")
-                    ->label('Semester')
-                    ->searchable()
-                    ->preload(),
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
                 Forms\Components\TextInput::make('code')
                     ->maxLength(100),
+                Forms\Components\Repeater::make('relations')
+                    ->relationship('relations')
+                    ->schema([
+                        Forms\Components\Select::make('board_id')
+                            ->relationship('board', 'name')
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\Select::make('stream_id')
+                            ->relationship('stream', 'name')
+                            ->searchable()
+                            ->preload(),
+                        Forms\Components\Select::make('semester_id')
+                            ->relationship('semester', 'number')
+                            ->getOptionLabelFromRecordUsing(fn ($record) => "Semester {$record->number}")
+                            ->label('Semester')
+                            ->searchable()
+                            ->preload(),
+                    ])
+                    ->label('Associations (Boards, Streams, Semesters)')
+                    ->grid(2)
+                    ->columnSpanFull()
+                    ->required(),
             ]);
     }
 
@@ -50,31 +58,31 @@ class SubjectResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('board.name')
-                    ->label('Board / University')
-                    ->sortable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('stream.name')
-                    ->label('Stream / Course')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('semester.number')
-                    ->label('Semester')
-                    ->formatStateUsing(fn ($state) => $state ? "Sem {$state}" : '-')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('code')
                     ->sortable()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('relations.board.name')
+                    ->label('Boards / Universities')
+                    ->badge()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('relations.stream.name')
+                    ->label('Streams / Courses')
+                    ->badge(),
+                Tables\Columns\TextColumn::make('relations.semester.number')
+                    ->label('Semesters')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state ? "Sem {$state}" : ''),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('board')
-                    ->relationship('board', 'name'),
+                    ->relationship('relations.board', 'name'),
                 Tables\Filters\SelectFilter::make('stream')
-                    ->relationship('stream', 'name'),
+                    ->relationship('relations.stream', 'name'),
                 Tables\Filters\SelectFilter::make('semester')
-                    ->relationship('semester', 'number')
+                    ->relationship('relations.semester', 'number')
                     ->getOptionLabelFromRecordUsing(fn ($record) => "Semester {$record->number}"),
             ])
             ->actions([

@@ -385,27 +385,33 @@ class DatabaseSeeder extends Seeder
                     }
 
                     foreach ($subjects as $subjectName => $subjectCode) {
-                        // Create Subject
+                        // Create Subject globally (independent)
                         $subjectModel = Subject::firstOrCreate(
                             [
-                                'board_id' => $boardModel->id,
                                 'name' => $subjectName,
-                                'stream_id' => $streamModel?->id,
-                                'semester_id' => $semesterModel?->id,
                             ],
                             [
                                 'code' => $subjectCode,
                             ]
                         );
 
+                        // Link Subject to Board / Stream / Semester via subject_relations
+                        \App\Models\SubjectRelation::firstOrCreate([
+                            'subject_id' => $subjectModel->id,
+                            'board_id' => $boardModel->id,
+                            'stream_id' => $streamModel?->id,
+                            'semester_id' => $semesterModel?->id,
+                        ]);
+
                         // Seed papers for this subject across years (2015-2025)
                         foreach ($years as $year) {
-                            // Seed papers for random availability (e.g. 70% chance of availability)
-                            // This matches realistic database configurations where some years are missing
                             if (rand(1, 100) <= 75) {
                                 Paper::firstOrCreate(
                                     [
                                         'subject_id' => $subjectModel->id,
+                                        'board_id' => $boardModel->id,
+                                        'stream_id' => $streamModel?->id,
+                                        'semester_id' => $semesterModel?->id,
                                         'year' => $year,
                                         'paper_set' => 'A',
                                     ],
@@ -418,11 +424,13 @@ class DatabaseSeeder extends Seeder
                                     ]
                                 );
                                 
-                                // 20% chance of having a supplementary/additional set paper as well
                                 if (rand(1, 100) <= 20) {
                                     Paper::firstOrCreate(
                                         [
                                             'subject_id' => $subjectModel->id,
+                                            'board_id' => $boardModel->id,
+                                            'stream_id' => $streamModel?->id,
+                                            'semester_id' => $semesterModel?->id,
                                             'year' => $year,
                                             'paper_set' => 'B',
                                         ],

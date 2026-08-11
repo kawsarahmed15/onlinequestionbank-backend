@@ -12,6 +12,9 @@ class Paper extends Model
 
     protected $fillable = [
         'subject_id',
+        'board_id',
+        'stream_id',
+        'semester_id',
         'year',
         'paper_set',
         'exam_type',
@@ -41,5 +44,20 @@ class Paper extends Model
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function board()
+    {
+        return $this->belongsTo(Board::class);
+    }
+
+    public function stream()
+    {
+        return $this->belongsTo(Stream::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
     }
 }

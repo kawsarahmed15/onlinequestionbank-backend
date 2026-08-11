@@ -134,6 +134,9 @@ class AdminAPIController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'subject_id' => 'required|uuid|exists:subjects,id',
+            'board_id' => 'required|uuid|exists:boards,id',
+            'stream_id' => 'nullable|uuid|exists:streams,id',
+            'semester_id' => 'nullable|uuid|exists:semesters,id',
             'year' => 'required|integer|min:2000',
             'paper_set' => 'required|string|max:5',
             'exam_type' => 'required|string|in:annual,supplementary',
@@ -147,6 +150,9 @@ class AdminAPIController extends Controller
 
         $paper = Paper::create([
             'subject_id' => $request->subject_id,
+            'board_id' => $request->board_id,
+            'stream_id' => $request->stream_id,
+            'semester_id' => $request->semester_id,
             'year' => $request->year,
             'paper_set' => $request->paper_set,
             'exam_type' => $request->exam_type,
@@ -184,8 +190,13 @@ class AdminAPIController extends Controller
         DB::transaction(function () use ($submission) {
             $submission->update(['status' => 'approved']);
             
+            $submitter = $submission->submitter;
+            
             Paper::create([
                 'subject_id' => $submission->subject_id,
+                'board_id' => $submitter ? $submitter->onboarded_board_id : '55555555-5555-5555-5555-555555555555',
+                'stream_id' => $submitter ? $submitter->onboarded_stream_id : null,
+                'semester_id' => $submitter ? $submitter->onboarded_semester_id : null,
                 'year' => $submission->year,
                 'paper_set' => $submission->paper_set,
                 'exam_type' => 'annual',

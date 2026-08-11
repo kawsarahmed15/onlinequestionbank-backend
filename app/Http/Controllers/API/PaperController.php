@@ -26,6 +26,15 @@ class PaperController extends Controller
             $ids = explode(',', $request->subject_ids);
             $query->whereIn('subject_id', $ids);
         }
+        if ($request->board_id) {
+            $query->where('board_id', $request->board_id);
+        }
+        if ($request->stream_id) {
+            $query->where('stream_id', $request->stream_id);
+        }
+        if ($request->semester_id) {
+            $query->where('semester_id', $request->semester_id);
+        }
         if ($request->year) {
             $query->where('year', $request->year);
         }

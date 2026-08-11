@@ -10,21 +10,26 @@ class Subject extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['board_id', 'stream_id', 'semester_id', 'name', 'code'];
+    protected $fillable = ['name', 'code'];
 
-    public function board()
+    public function relations()
     {
-        return $this->belongsTo(Board::class);
+        return $this->hasMany(SubjectRelation::class);
     }
 
-    public function stream()
+    public function boards()
     {
-        return $this->belongsTo(Stream::class);
+        return $this->belongsToMany(Board::class, 'subject_relations');
     }
 
-    public function semester()
+    public function streams()
     {
-        return $this->belongsTo(Semester::class);
+        return $this->belongsToMany(Stream::class, 'subject_relations');
+    }
+
+    public function semesters()
+    {
+        return $this->belongsToMany(Semester::class, 'subject_relations');
     }
 
     public function papers()

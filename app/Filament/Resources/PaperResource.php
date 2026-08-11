@@ -29,12 +29,11 @@ class PaperResource extends Resource
                     ->live()
                     ->dehydrated(false)
                     ->afterStateHydrated(function (Set $set, $state, $record) {
-                        if ($record && $record->subject) {
-                            $subject = $record->subject;
-                            if ($subject->stream) {
-                                $set('level_id', $subject->stream->level_id);
-                            } elseif ($subject->semester) {
-                                $set('level_id', $subject->semester->level_id);
+                        if ($record) {
+                            if ($record->stream_id && $record->stream) {
+                                $set('level_id', $record->stream->level_id);
+                            } elseif ($record->semester_id && $record->semester) {
+                                $set('level_id', $record->semester->level_id);
                             } else {
                                 $classX = \App\Models\Level::where('name', 'Class X')->first();
                                 if ($classX) {
@@ -49,39 +48,21 @@ class PaperResource extends Resource
                     ->label('Stream / Course')
                     ->options(fn (Get $get) => \App\Models\Stream::where('level_id', $get('level_id'))->pluck('name', 'id'))
                     ->live()
-                    ->dehydrated(false)
                     ->visible(fn (Get $get) => !empty($get('level_id')) && \App\Models\Level::find($get('level_id'))?->name !== 'Class X')
-                    ->afterStateHydrated(function (Set $set, $state, $record) {
-                        if ($record && $record->subject && $record->subject->stream_id) {
-                            $set('stream_id', $record->subject->stream_id);
-                        }
-                    })
                     ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
 
                 Forms\Components\Select::make('semester_id')
                     ->label('Semester')
                     ->options(fn (Get $get) => \App\Models\Semester::where('level_id', $get('level_id'))->pluck('number', 'id')->mapWithKeys(fn ($num, $id) => [$id => "Semester $num"]))
                     ->live()
-                    ->dehydrated(false)
                     ->visible(fn (Get $get) => !empty($get('level_id')) && \App\Models\Level::find($get('level_id'))?->name === 'Degree')
-                    ->afterStateHydrated(function (Set $set, $state, $record) {
-                        if ($record && $record->subject && $record->subject->semester_id) {
-                            $set('semester_id', $record->subject->semester_id);
-                        }
-                    })
                     ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
 
                 Forms\Components\Select::make('board_id')
                     ->label('Board / University')
                     ->options(\App\Models\Board::all()->pluck('name', 'id'))
                     ->live()
-                    ->dehydrated(false)
                     ->required()
-                    ->afterStateHydrated(function (Set $set, $state, $record) {
-                        if ($record && $record->subject) {
-                            $set('board_id', $record->subject->board_id);
-                        }
-                    })
                     ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
 
                 Forms\Components\Select::make('subject_id')

@@ -69,15 +69,19 @@ class SubjectController extends Controller
     public function getSubjects(Request $request)
     {
         $query = Subject::query();
-        if ($request->board_id) {
-            $query->where('board_id', $request->board_id);
-        }
-        if ($request->stream_id) {
-            $query->where('stream_id', $request->stream_id);
-        }
-        if ($request->semester_id) {
-            $query->where('semester_id', $request->semester_id);
-        }
+        
+        $query->whereHas('relations', function ($q) use ($request) {
+            if ($request->board_id) {
+                $q->where('board_id', $request->board_id);
+            }
+            if ($request->stream_id) {
+                $q->where('stream_id', $request->stream_id);
+            }
+            if ($request->semester_id) {
+                $q->where('semester_id', $request->semester_id);
+            }
+        });
+
         $subjects = $query->orderBy('name', 'asc')->get();
         return response()->json(['success' => true, 'data' => $subjects]);
     }
