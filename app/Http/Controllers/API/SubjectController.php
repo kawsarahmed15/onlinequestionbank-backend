@@ -13,11 +13,21 @@ use Illuminate\Support\Facades\DB;
 class SubjectController extends Controller
 {
     /**
-     * Get list of levels.
+     * Get list of levels with their onboarding config.
+     * The config tells the Flutter app exactly which steps to show and what labels to use.
      */
     public function getLevels()
     {
-        $levels = Level::orderBy('sort_order', 'asc')->get();
+        $levels = Level::orderBy('sort_order', 'asc')->get()->map(function ($level) {
+            return [
+                'id'                => $level->id,
+                'name'              => $level->name,
+                'icon_name'         => $level->icon_name,
+                'description'       => $level->description,
+                'sort_order'        => $level->sort_order,
+                'onboarding_config' => $level->resolved_config,
+            ];
+        });
         return response()->json(['success' => true, 'data' => $levels]);
     }
 

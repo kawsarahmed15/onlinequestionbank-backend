@@ -238,6 +238,13 @@ class AuthController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.'], 404);
         }
 
+        if ($user->onboarded_level_id !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Onboarding details have already been set and cannot be changed.'
+            ], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'onboarded_level_id' => 'required|uuid|exists:levels,id',
             'onboarded_stream_id' => 'nullable|uuid|exists:streams,id',
@@ -270,6 +277,13 @@ class AuthController extends Controller
         $user = User::find($id);
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+        }
+
+        if ($user->subjects()->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Onboarded subjects have already been synced and cannot be changed.'
+            ], 403);
         }
 
         $validator = Validator::make($request->all(), [
