@@ -138,6 +138,13 @@ class LevelResource extends Resource
                         Forms\Components\Fieldset::make('Semester Step Labels')
                             ->visible(fn (Forms\Get $get) => $get('onboarding_config.requires_semester') === true)
                             ->schema([
+                                Forms\Components\TextInput::make('onboarding_config.total_semesters')
+                                    ->label('Total Semesters')
+                                    ->numeric()
+                                    ->default(6)
+                                    ->helperText('Number of semesters to show (e.g. 8 for UG, 4 or 6 for PG). Semester models will be auto-synced upon save.')
+                                    ->required(fn (Forms\Get $get) => $get('onboarding_config.requires_semester') === true)
+                                    ->columnSpanFull(),
                                 Forms\Components\TextInput::make('onboarding_config.semester_label')
                                     ->label('Step Label')
                                     ->placeholder('e.g. "Semester", "Term", "Year"')

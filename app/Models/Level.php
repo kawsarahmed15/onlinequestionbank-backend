@@ -17,6 +17,35 @@ class Level extends Model
         'sort_order' => 'integer',
     ];
 
+    protected static function booted()
+    {
+        static::saved(function ($level) {
+            $config = $level->onboarding_config ?? [];
+            if (isset($config['requires_semester']) && $config['requires_semester']) {
+                $total = intval($config['total_semesters'] ?? 0);
+                if ($total > 0) {
+                    for ($i = 1; $i <= $total; $i++) {
+                        \App\Models\Semester::firstOrCreate([
+                            'level_id' => $level->id,
+                            'number' => $i,
+                        ]);
+                    }
+                    
+                    $extraSemesters = \App\Models\Semester::where('level_id', $level->id)
+                        ->where('number', '>', $total)
+                        ->get();
+                    foreach ($extraSemesters as $extraSem) {
+                        try {
+                            $extraSem->delete();
+                        } catch (\Exception $e) {
+                            // ignore if has foreign key constraint
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     public function streams()
     {
         return $this->hasMany(Stream::class);
@@ -43,7 +72,7 @@ class Level extends Model
             return [
                 'requires_stream'      => true,
                 'requires_board'       => true,
-                'requires_semester'    => false,
+                'requires_semester'    => true,
                 'board_filter_type'    => 'university',
                 'stream_label'         => 'Course / Programme',
                 'stream_placeholder'   => 'Select your PG course (e.g. MA, MSc, MBA)...',
@@ -52,9 +81,11 @@ class Level extends Model
                 'board_search_hint'    => 'Search by university name...',
                 'semester_label'       => 'Semester',
                 'semester_placeholder' => 'Select semester',
+                'total_semesters'      => 4,
                 'step_descriptions'    => [
                     'stream' => 'Which post-graduate programme are you enrolled in?',
                     'board'  => 'Which university are you affiliated with?',
+                    'semester' => 'Which semester are you currently in?',
                 ],
             ];
         }
@@ -72,6 +103,7 @@ class Level extends Model
                 'board_search_hint'    => 'Search by university name...',
                 'semester_label'       => 'Semester',
                 'semester_placeholder' => 'Select semester',
+                'total_semesters'      => 8,
                 'step_descriptions'    => [
                     'stream' => 'Which undergraduate programme are you enrolled in?',
                     'board'  => 'Which university are you affiliated with?',
