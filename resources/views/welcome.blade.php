@@ -1517,7 +1517,14 @@
                 if (data.success) {
                     window.location.reload();
                 } else {
-                    errorContainer.innerText = data.message || 'Auth failed. Please check inputs.';
+                    let msg = data.message || 'Auth failed. Please check inputs.';
+                    if (data.errors) {
+                        const firstKey = Object.keys(data.errors)[0];
+                        if (firstKey && data.errors[firstKey].length > 0) {
+                            msg = data.errors[firstKey][0];
+                        }
+                    }
+                    errorContainer.innerText = msg;
                     errorContainer.classList.remove('hidden');
                 }
             })

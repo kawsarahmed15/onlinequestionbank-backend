@@ -384,7 +384,7 @@ Route::post('/web/register', function (Request $request) {
         'mobile_number' => 'required|string|unique:users,mobile_number',
         'school_college_name' => 'required|string|max:255',
         'password' => 'required|string|min:6',
-        'email' => 'nullable|email',
+        'email' => 'nullable|email|unique:users,email',
         'referral_code' => 'nullable|string',
     ]);
 
