@@ -300,3 +300,132 @@ Route::get('/web/subjects', function (Request $request) {
     });
     return response()->json(['success' => true, 'data' => $query->orderBy('name', 'asc')->get()]);
 });
+
+// JSON endpoint for fetching papers for a specific subject
+Route::get('/web/subjects/{id}/papers', function ($id) {
+    $subject = Subject::find($id);
+    if (!$subject) {
+        return response()->json(['success' => false, 'message' => 'Subject not found.'], 404);
+    }
+    
+    $currentYear = (int)date('Y');
+    $expectedYears = range($currentYear, $currentYear - 9);
+
+    $availablePapers = Paper::where('subject_id', $id)
+        ->where('is_active', true)
+        ->get();
+
+    $papersByYear = $availablePapers->groupBy('year');
+
+    $grid = [];
+    foreach ($expectedYears as $year) {
+        $yearPapers = $papersByYear[$year] ?? collect();
+        $grid[] = [
+            'year' => $year,
+            'available' => count($yearPapers) > 0,
+            'papers' => $yearPapers->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'paper_set' => $p->paper_set,
+                    'exam_type' => $p->exam_type,
+                    'file_url' => $p->file_url,
+                ];
+            })->toArray()
+        ];
+    }
+
+    return response()->json([
+        'success' => true,
+        'subject' => [
+            'id' => $subject->id,
+            'name' => $subject->name,
+            'code' => $subject->code,
+        ],
+        'grid' => $grid
+    ]);
+});
+
+// AJAX Auth: Login
+Route::post('/web/login', function (Request $request) {
+    $request->validate([
+        'mobile_number' => 'required|string',
+        'password' => 'required|string',
+    ]);
+
+    $user = User::where('mobile_number', $request->mobile_number)->first();
+    if ($user && \Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+        session(['web_user_id' => $user->id]);
+        
+        if ($user->onboarded_level_id) {
+            session([
+                'focus_level_id' => $user->onboarded_level_id,
+                'focus_stream_id' => $user->onboarded_stream_id,
+                'focus_board_id' => $user->onboarded_board_id,
+                'focus_semester_id' => $user->onboarded_semester_id,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true, 
+            'user' => [
+                'name' => $user->name,
+                'mobile_number' => $user->mobile_number
+            ]
+        ]);
+    }
+
+    return response()->json(['success' => false, 'message' => 'Invalid mobile number or password.'], 401);
+});
+
+// AJAX Auth: Register
+Route::post('/web/register', function (Request $request) {
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'mobile_number' => 'required|string|unique:users,mobile_number',
+        'school_college_name' => 'required|string|max:255',
+        'password' => 'required|string|min:6',
+        'email' => 'nullable|email',
+        'referral_code' => 'nullable|string',
+    ]);
+
+    $user = User::create([
+        'id' => Str::uuid()->toString(),
+        'name' => $request->name,
+        'mobile_number' => $request->mobile_number,
+        'school_college_name' => $request->school_college_name,
+        'password' => bcrypt($request->password),
+        'email' => $request->email,
+        'referral_code' => $request->referral_code,
+        'role' => 'student',
+    ]);
+
+    $focusLevelId = session('focus_level_id');
+    $focusStreamId = session('focus_stream_id');
+    $focusBoardId = session('focus_board_id');
+    $focusSemesterId = session('focus_semester_id');
+
+    if ($focusLevelId && $focusBoardId) {
+        $user->update([
+            'onboarded_level_id' => $focusLevelId,
+            'onboarded_stream_id' => $focusStreamId,
+            'onboarded_board_id' => $focusBoardId,
+            'onboarded_semester_id' => $focusSemesterId,
+        ]);
+    }
+
+    session(['web_user_id' => $user->id]);
+
+    return response()->json([
+        'success' => true,
+        'user' => [
+            'name' => $user->name,
+            'mobile_number' => $user->mobile_number
+        ]
+    ]);
+});
+
+// AJAX Auth: Logout
+Route::post('/web/logout', function () {
+    session()->forget(['web_user_id', 'focus_level_id', 'focus_stream_id', 'focus_board_id', 'focus_semester_id']);
+    return response()->json(['success' => true]);
+});
