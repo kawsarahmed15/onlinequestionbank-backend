@@ -127,7 +127,7 @@ Route::get('/', function (Request $request) {
         'focusLevel', 'focusStream', 'focusBoard', 'focusSemester',
         'subjects', 'selectedSubject', 'papersGrid',
         'currentView', 'savedPapers', 'myRequests', 'mySubmissions',
-        'userSavedPaperIds'
+        'userSavedPaperIds', 'webUser'
     ));
 });
 
