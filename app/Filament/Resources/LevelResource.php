@@ -54,112 +54,77 @@ class LevelResource extends Resource
                 Forms\Components\Section::make('Onboarding Flow Configuration')
                     ->description('Control exactly which steps appear in the student onboarding flow for this academic level. This makes the flow dynamic — no code changes needed.')
                     ->schema([
-
-                        // Step toggles
-                        Forms\Components\Fieldset::make('Required Steps')
+                        Forms\Components\Repeater::make('onboarding_config.steps')
+                            ->label('Onboarding Steps')
+                            ->helperText('Define the steps in order. Drag to reorder. Each level can have different steps in any order.')
+                            ->reorderable()
+                            ->addActionLabel('+ Add Step')
                             ->schema([
-                                Forms\Components\Toggle::make('onboarding_config.requires_stream')
-                                    ->label('Show Stream / Course Step')
-                                    ->helperText('Enable to show a "Stream" or "Course" selection step. Use for levels like Class XII (Science/Commerce) or Degree (BA/BSc).')
-                                    ->default(false)
+                                Forms\Components\Select::make('type')
+                                    ->label('Step Type')
+                                    ->options([
+                                        'stream'   => 'Stream / Course selection',
+                                        'board'    => 'Board / University selection',
+                                        'semester' => 'Semester / Term selection',
+                                    ])
+                                    ->required()
                                     ->live(),
-                                Forms\Components\Toggle::make('onboarding_config.requires_board')
-                                    ->label('Show Board / University Step')
-                                    ->helperText('Enable to show a Board or University selection. Almost always required.')
-                                    ->default(true)
-                                    ->live(),
-                                Forms\Components\Toggle::make('onboarding_config.requires_semester')
-                                    ->label('Show Semester Step')
-                                    ->helperText('Enable for levels where semester-wise papers are organized (e.g. Degree / PG programs).')
-                                    ->default(false)
-                                    ->live(),
-                            ])->columns(3),
-
-                        // Stream/Course labels
-                        Forms\Components\Fieldset::make('Stream / Course Step Labels')
-                            ->visible(fn (Forms\Get $get) => $get('onboarding_config.requires_stream') === true)
-                            ->schema([
-                                Forms\Components\TextInput::make('onboarding_config.stream_label')
+                                
+                                Forms\Components\TextInput::make('label')
                                     ->label('Step Label')
-                                    ->placeholder('e.g. "Stream", "Course / Degree", "Programme"')
-                                    ->helperText('Shown as the section header during onboarding.')
-                                    ->default('Stream'),
-                                Forms\Components\TextInput::make('onboarding_config.stream_placeholder')
-                                    ->label('Dropdown Placeholder')
-                                    ->placeholder('e.g. "Select your course (e.g. BA, BSc, MBA)..."')
-                                    ->helperText('Hint text shown inside the search box.')
-                                    ->default('Select your stream...'),
-                                Forms\Components\Textarea::make('onboarding_config.step_descriptions.stream')
+                                    ->placeholder('e.g. "Stream", "University", "Semester"')
+                                    ->helperText('Section header shown to student during onboarding.')
+                                    ->required(),
+                                
+                                Forms\Components\Textarea::make('description')
                                     ->label('Step Description')
-                                    ->placeholder('e.g. "Which post-graduate programme are you enrolled in?"')
-                                    ->helperText('Shown below the step header as a subtitle.')
+                                    ->placeholder('e.g. "Which programme are you enrolled in?"')
+                                    ->helperText('Subtitle shown below the header.')
                                     ->rows(2)
                                     ->columnSpanFull(),
-                            ])->columns(2),
-
-                // Board/University labels
-                        Forms\Components\Fieldset::make('Board / University Step Labels')
-                            ->visible(fn (Forms\Get $get) => $get('onboarding_config.requires_board') === true)
-                            ->schema([
-                                Forms\Components\Select::make('onboarding_config.board_filter_type')
+                                
+                                Forms\Components\TextInput::make('placeholder')
+                                    ->label('Placeholder / Hint')
+                                    ->placeholder('e.g. "Select your course..."')
+                                    ->helperText('Text shown inside the search/dropdown field.')
+                                    ->visible(fn (Forms\Get $get) => in_array($get('type'), ['stream', 'board'])),
+                                
+                                Forms\Components\TextInput::make('search_hint')
+                                    ->label('Empty State Hint')
+                                    ->placeholder('e.g. "Search by university name..."')
+                                    ->helperText('Shown when no results yet.')
+                                    ->visible(fn (Forms\Get $get) => $get('type') === 'board'),
+                                
+                                Forms\Components\Select::make('filter_type')
                                     ->label('Board List Filter')
                                     ->options([
-                                        'university' => 'Universities only (for Degree / PG levels)',
-                                        'board'      => 'Exam Boards only (for Class X / XII levels)',
-                                        ''           => 'Show all (no filter)',
+                                        'university' => 'Universities only',
+                                        'board'      => 'Exam Boards only',
+                                        ''           => 'Show all',
                                     ])
                                     ->default('board')
-                                    ->helperText('Controls which entries appear in the board/university picker. "Universities only" shows entries with "University" in their name. "Exam Boards only" hides university entries. Set in admin — no code changes needed.')
-                                    ->columnSpanFull(),
-                                Forms\Components\TextInput::make('onboarding_config.board_label')
-                                    ->label('Step Label')
-                                    ->placeholder('e.g. "Exam Board", "University", "Council"')
-                                    ->helperText('Shown as the section header (e.g. "Choose your Exam Board" or "Choose your University").')
-                                    ->default('Exam Board'),
-                                Forms\Components\TextInput::make('onboarding_config.board_placeholder')
-                                    ->label('Search Placeholder')
-                                    ->placeholder('e.g. "Search your university (e.g. Gauhati University)..."')
-                                    ->helperText('Hint text shown in the board/university search box.')
-                                    ->default('Search your board...'),
-                                Forms\Components\TextInput::make('onboarding_config.board_search_hint')
-                                    ->label('Search Hint Text')
-                                    ->placeholder('e.g. "Search by state or board name..."')
-                                    ->helperText('Secondary hint shown when the board list is empty.')
-                                    ->default('Search by name...'),
-                                Forms\Components\Textarea::make('onboarding_config.step_descriptions.board')
-                                    ->label('Step Description')
-                                    ->placeholder('e.g. "Which university are you affiliated with?"')
-                                    ->helperText('Shown below the step header as a subtitle.')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
-                            ])->columns(2),
-
-                        // Semester labels
-                        Forms\Components\Fieldset::make('Semester Step Labels')
-                            ->visible(fn (Forms\Get $get) => $get('onboarding_config.requires_semester') === true)
-                            ->schema([
-                                Forms\Components\TextInput::make('onboarding_config.total_semesters')
-                                    ->label('Total Semesters')
+                                    ->helperText('Controls which boards appear in this step.')
+                                    ->visible(fn (Forms\Get $get) => $get('type') === 'board'),
+                                
+                                Forms\Components\TextInput::make('total')
+                                    ->label('Total Count')
                                     ->numeric()
-                                    ->default(6)
-                                    ->helperText('Number of semesters to show (e.g. 8 for UG, 4 or 6 for PG). Semester models will be auto-synced upon save.')
-                                    ->required(fn (Forms\Get $get) => $get('onboarding_config.requires_semester') === true)
-                                    ->columnSpanFull(),
-                                Forms\Components\TextInput::make('onboarding_config.semester_label')
-                                    ->label('Step Label')
-                                    ->placeholder('e.g. "Semester", "Term", "Year"')
-                                    ->helperText('Shown as the section header for semester selection.')
-                                    ->default('Semester'),
-                                Forms\Components\TextInput::make('onboarding_config.semester_placeholder')
-                                    ->label('Dropdown Placeholder')
-                                    ->placeholder('e.g. "Select your current semester..."')
-                                    ->default('Select semester'),
-                                Forms\Components\Textarea::make('onboarding_config.step_descriptions.semester')
-                                    ->label('Step Description')
-                                    ->placeholder('e.g. "Which semester are you currently in?"')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
-                            ])->columns(2),
+                                    ->default(8)
+                                    ->helperText('Number of semesters/terms to show (e.g. 8 for UG, 4 for PG).')
+                                    ->visible(fn (Forms\Get $get) => $get('type') === 'semester'),
+                                
+                                Forms\Components\TextInput::make('icon')
+                                    ->label('Icon Name')
+                                    ->placeholder('e.g. menu_book, account_balance, calendar_month')
+                                    ->helperText('Material icon name shown in the Flutter app.')
+                                    ->default('school'),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => 
+                                isset($state['type']) ? ucfirst($state['type']) . ': ' . ($state['label'] ?? '') : null
+                            )
                     ]),
             ]);
     }
@@ -175,30 +140,15 @@ class LevelResource extends Resource
                 Tables\Columns\TextColumn::make('sort_order')
                     ->sortable()
                     ->label('Order'),
-                Tables\Columns\IconColumn::make('onboarding_config.requires_stream')
-                    ->label('Stream Step')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('gray'),
-                Tables\Columns\IconColumn::make('onboarding_config.requires_board')
-                    ->label('Board Step')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('gray'),
-                Tables\Columns\IconColumn::make('onboarding_config.requires_semester')
-                    ->label('Semester Step')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle')
-                    ->trueColor('success')
-                    ->falseColor('gray'),
-                Tables\Columns\TextColumn::make('onboarding_config.board_label')
-                    ->label('Board Label')
-                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('onboarding_config.steps')
+                    ->label('Steps Configured')
+                    ->formatStateUsing(function ($state) {
+                        if (!is_array($state)) return 'None';
+                        $types = collect($state)->pluck('type')->map(fn($t) => ucfirst($t))->implode(', ');
+                        return count($state) . ' steps (' . $types . ')';
+                    })
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

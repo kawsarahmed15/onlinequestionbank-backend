@@ -21,8 +21,11 @@ class Level extends Model
     {
         static::saved(function ($level) {
             $config = $level->onboarding_config ?? [];
-            if (isset($config['requires_semester']) && $config['requires_semester']) {
-                $total = intval($config['total_semesters'] ?? 0);
+            $steps = $config['steps'] ?? [];
+            $semesterStep = collect($steps)->firstWhere('type', 'semester');
+            
+            if ($semesterStep) {
+                $total = intval($semesterStep['total'] ?? 0);
                 if ($total > 0) {
                     for ($i = 1; $i <= $total; $i++) {
                         \App\Models\Semester::firstOrCreate([
@@ -56,98 +59,95 @@ class Level extends Model
         return $this->hasMany(Semester::class);
     }
 
+    public function requiresStream(): bool
+    {
+        return collect($this->resolved_config['steps'] ?? [])->contains('type', 'stream');
+    }
+
+    public function requiresBoard(): bool
+    {
+        return collect($this->resolved_config['steps'] ?? [])->contains('type', 'board');
+    }
+
+    public function requiresSemester(): bool
+    {
+        return collect($this->resolved_config['steps'] ?? [])->contains('type', 'semester');
+    }
+
     /**
      * Returns the resolved onboarding_config, falling back to sensible defaults
      * based on the level name if none is configured in the database.
      */
     public function getResolvedConfigAttribute(): array
     {
-        if (!empty($this->onboarding_config)) {
-            return $this->onboarding_config;
+        $config = $this->onboarding_config ?? [];
+        if (!empty($config)) {
+            if (isset($config['steps'])) {
+                return $config;
+            }
+            
+            // Convert old format on the fly
+            $steps = [];
+            if (!empty($config['requires_stream'])) {
+                $steps[] = [
+                    'type' => 'stream',
+                    'label' => $config['stream_label'] ?? 'Stream',
+                    'description' => $config['step_descriptions']['stream'] ?? '',
+                    'placeholder' => $config['stream_placeholder'] ?? 'Select stream...',
+                    'icon' => 'menu_book',
+                ];
+            }
+            if (!empty($config['requires_board'])) {
+                $steps[] = [
+                    'type' => 'board',
+                    'label' => $config['board_label'] ?? 'Exam Board',
+                    'description' => $config['step_descriptions']['board'] ?? '',
+                    'placeholder' => $config['board_placeholder'] ?? 'Search board...',
+                    'search_hint' => $config['board_search_hint'] ?? 'Search by name...',
+                    'filter_type' => $config['board_filter_type'] ?? 'board',
+                    'icon' => 'account_balance',
+                ];
+            }
+            if (!empty($config['requires_semester'])) {
+                $steps[] = [
+                    'type' => 'semester',
+                    'label' => $config['semester_label'] ?? 'Semester',
+                    'description' => $config['step_descriptions']['semester'] ?? '',
+                    'total' => intval($config['total_semesters'] ?? 6),
+                    'icon' => 'calendar_month',
+                ];
+            }
+            return ['steps' => $steps];
         }
 
         $name = strtoupper($this->name ?? '');
 
         if (str_contains($name, 'POST GRAD') || str_contains($name, 'MASTER') || str_contains($name, 'PG')) {
-            return [
-                'requires_stream'      => true,
-                'requires_board'       => true,
-                'requires_semester'    => true,
-                'board_filter_type'    => 'university',
-                'stream_label'         => 'Course / Programme',
-                'stream_placeholder'   => 'Select your PG course (e.g. MA, MSc, MBA)...',
-                'board_label'          => 'University',
-                'board_placeholder'    => 'Search your university...',
-                'board_search_hint'    => 'Search by university name...',
-                'semester_label'       => 'Semester',
-                'semester_placeholder' => 'Select semester',
-                'total_semesters'      => 4,
-                'step_descriptions'    => [
-                    'stream' => 'Which post-graduate programme are you enrolled in?',
-                    'board'  => 'Which university are you affiliated with?',
-                    'semester' => 'Which semester are you currently in?',
-                ],
-            ];
+            return ['steps' => [
+                ['type' => 'stream', 'label' => 'Course / Programme', 'description' => 'Which post-graduate programme are you enrolled in?', 'placeholder' => 'Select your PG course (e.g. MA, MSc, MBA)...', 'icon' => 'menu_book'],
+                ['type' => 'board', 'label' => 'University', 'description' => 'Which university are you affiliated with?', 'placeholder' => 'Search your university...', 'search_hint' => 'Search by university name...', 'filter_type' => 'university', 'icon' => 'account_balance'],
+                ['type' => 'semester', 'label' => 'Semester', 'description' => 'Which semester are you currently in?', 'total' => 4, 'icon' => 'calendar_month']
+            ]];
         }
 
         if (str_contains($name, 'DEGREE') || str_contains($name, 'BACHELOR') || str_contains($name, 'UG')) {
-            return [
-                'requires_stream'      => true,
-                'requires_board'       => true,
-                'requires_semester'    => true,
-                'board_filter_type'    => 'university',
-                'stream_label'         => 'Course / Degree',
-                'stream_placeholder'   => 'Select your course (e.g. BA, BSc, BCom)...',
-                'board_label'          => 'University',
-                'board_placeholder'    => 'Search your university...',
-                'board_search_hint'    => 'Search by university name...',
-                'semester_label'       => 'Semester',
-                'semester_placeholder' => 'Select semester',
-                'total_semesters'      => 8,
-                'step_descriptions'    => [
-                    'stream' => 'Which undergraduate programme are you enrolled in?',
-                    'board'  => 'Which university are you affiliated with?',
-                    'semester' => 'Which semester are you currently in?',
-                ],
-            ];
+            return ['steps' => [
+                ['type' => 'stream', 'label' => 'Course / Degree', 'description' => 'Which undergraduate programme are you enrolled in?', 'placeholder' => 'Select your course (e.g. BA, BSc, BCom)...', 'icon' => 'menu_book'],
+                ['type' => 'board', 'label' => 'University', 'description' => 'Which university are you affiliated with?', 'placeholder' => 'Search your university...', 'search_hint' => 'Search by university name...', 'filter_type' => 'university', 'icon' => 'account_balance'],
+                ['type' => 'semester', 'label' => 'Semester', 'description' => 'Which semester are you currently in?', 'total' => 8, 'icon' => 'calendar_month']
+            ]];
         }
 
         if (str_contains($name, 'XII') || str_contains($name, 'HSC') || str_contains($name, 'HIGHER SECONDARY')) {
-            return [
-                'requires_stream'      => true,
-                'requires_board'       => true,
-                'requires_semester'    => false,
-                'board_filter_type'    => 'board',
-                'stream_label'         => 'Stream',
-                'stream_placeholder'   => 'Select your stream...',
-                'board_label'          => 'Exam Board',
-                'board_placeholder'    => 'Search your board (e.g. CBSE, AHSEC)...',
-                'board_search_hint'    => 'Search by state or board name...',
-                'semester_label'       => 'Semester',
-                'semester_placeholder' => 'Select semester',
-                'step_descriptions'    => [
-                    'stream' => 'Which stream are you studying?',
-                    'board'  => 'Which board are you enrolled under?',
-                ],
-            ];
+            return ['steps' => [
+                ['type' => 'stream', 'label' => 'Stream', 'description' => 'Which stream are you studying?', 'placeholder' => 'Select your stream...', 'icon' => 'menu_book'],
+                ['type' => 'board', 'label' => 'Exam Board', 'description' => 'Which board are you enrolled under?', 'placeholder' => 'Search your board (e.g. CBSE, AHSEC)...', 'search_hint' => 'Search by state or board name...', 'filter_type' => 'board', 'icon' => 'account_balance']
+            ]];
         }
 
         // Default fallback (Class X, Matriculation, etc.)
-        return [
-            'requires_stream'      => false,
-            'requires_board'       => true,
-            'requires_semester'    => false,
-            'board_filter_type'    => 'board',
-            'stream_label'         => 'Stream',
-            'stream_placeholder'   => 'Select your stream...',
-            'board_label'          => 'Exam Board',
-            'board_placeholder'    => 'Search your board...',
-            'board_search_hint'    => 'Search by state or board name...',
-            'semester_label'       => 'Semester',
-            'semester_placeholder' => 'Select semester',
-            'step_descriptions'    => [
-                'board' => 'Which board are you enrolled under?',
-            ],
-        ];
+        return ['steps' => [
+            ['type' => 'board', 'label' => 'Exam Board', 'description' => 'Which board are you enrolled under?', 'placeholder' => 'Search your board...', 'search_hint' => 'Search by state or board name...', 'filter_type' => 'board', 'icon' => 'account_balance']
+        ]];
     }
 }
