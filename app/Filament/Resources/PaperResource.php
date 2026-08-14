@@ -27,21 +27,7 @@ class PaperResource extends Resource
                     ->label('Class / Program')
                     ->options(\App\Models\Level::all()->pluck('name', 'id'))
                     ->live()
-                    ->dehydrated(false)
-                    ->afterStateHydrated(function (Set $set, $state, $record) {
-                        if ($record) {
-                            if ($record->stream_id && $record->stream) {
-                                $set('level_id', $record->stream->level_id);
-                            } elseif ($record->semester_id && $record->semester) {
-                                $set('level_id', $record->semester->level_id);
-                            } else {
-                                $classX = \App\Models\Level::where('name', 'Class X')->first();
-                                if ($classX) {
-                                    $set('level_id', $classX->id);
-                                }
-                            }
-                        }
-                    })
+                    ->required()
                     ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
 
                 Forms\Components\Select::make('stream_id')
@@ -62,7 +48,6 @@ class PaperResource extends Resource
                     ->label('Board / University')
                     ->options(\App\Models\Board::all()->pluck('name', 'id'))
                     ->live()
-                    ->required()
                     ->afterStateUpdated(fn (Set $set) => $set('subject_id', null)),
 
                 Forms\Components\Select::make('subject_id')
@@ -71,27 +56,18 @@ class PaperResource extends Resource
                     ->searchable()
                     ->preload()
                     ->options(function (Get $get) {
-                        $boardId = $get('board_id');
-                        $streamId = $get('stream_id');
-                        $semesterId = $get('semester_id');
-                        $levelId = $get('level_id');
-
-                        if (!$boardId) return [];
-
-                        $query = \App\Models\Subject::where('board_id', $boardId);
-
-                        if ($levelId && \App\Models\Level::find($levelId)?->name === 'Class X') {
-                            $query->whereNull('stream_id')->whereNull('semester_id');
-                        } else {
-                            if ($streamId) {
-                                $query->where('stream_id', $streamId);
+                        return \App\Models\Subject::whereHas('relations', function ($q) use ($get) {
+                            $q->where('level_id', $get('level_id'));
+                            if ($boardId = $get('board_id')) {
+                                $q->where('board_id', $boardId);
                             }
-                            if ($semesterId) {
-                                $query->where('semester_id', $semesterId);
+                            if ($streamId = $get('stream_id')) {
+                                $q->where('stream_id', $streamId);
                             }
-                        }
-
-                        return $query->pluck('name', 'id');
+                            if ($semesterId = $get('semester_id')) {
+                                $q->where('semester_id', $semesterId);
+                            }
+                        })->pluck('name', 'id');
                     }),
 
                 Forms\Components\TextInput::make('year')

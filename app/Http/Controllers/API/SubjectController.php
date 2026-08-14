@@ -81,6 +81,9 @@ class SubjectController extends Controller
         $query = Subject::query();
         
         $query->whereHas('relations', function ($q) use ($request) {
+            if ($request->level_id) {
+                $q->where('level_id', $request->level_id);
+            }
             if ($request->board_id) {
                 $q->where('board_id', $request->board_id);
             }

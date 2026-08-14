@@ -31,9 +31,13 @@ class SubjectResource extends Resource
                 Forms\Components\Repeater::make('relations')
                     ->relationship('relations')
                     ->schema([
+                        Forms\Components\Select::make('level_id')
+                            ->relationship('level', 'name')
+                            ->required()
+                            ->searchable()
+                            ->preload(),
                         Forms\Components\Select::make('board_id')
                             ->relationship('board', 'name')
-                            ->required()
                             ->searchable()
                             ->preload(),
                         Forms\Components\Select::make('stream_id')

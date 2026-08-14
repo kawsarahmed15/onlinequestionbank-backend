@@ -26,6 +26,9 @@ class PaperController extends Controller
             $ids = explode(',', $request->subject_ids);
             $query->whereIn('subject_id', $ids);
         }
+        if ($request->level_id) {
+            $query->where('level_id', $request->level_id);
+        }
         if ($request->board_id) {
             $query->where('board_id', $request->board_id);
         }

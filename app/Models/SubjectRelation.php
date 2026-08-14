@@ -10,11 +10,16 @@ class SubjectRelation extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['subject_id', 'board_id', 'stream_id', 'semester_id'];
+    protected $fillable = ['subject_id', 'level_id', 'board_id', 'stream_id', 'semester_id'];
 
     public function subject()
     {
         return $this->belongsTo(Subject::class);
+    }
+
+    public function level()
+    {
+        return $this->belongsTo(Level::class);
     }
 
     public function board()
